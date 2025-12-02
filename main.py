@@ -1,6 +1,5 @@
 import streamlit as st
 from openai import OpenAI
-from dotenv import load_dotenv
 import os
 
 # ====== LOGIN SYSTEM ======
@@ -32,7 +31,6 @@ st.write("🎉 로그인 성공! 앱을 사용할 수 있습니다.")
 
 
 # Load API Key
-load_dotenv()
 api_key = os.getenv("GPT_API_KEY")
 client = OpenAI(api_key=api_key)
 
