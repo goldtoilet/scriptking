@@ -17,7 +17,7 @@ def login_screen():
     if st.button("로그인"):
         if user == LOGIN_ID and pw == LOGIN_PW:
             st.session_state["logged_in"] = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
