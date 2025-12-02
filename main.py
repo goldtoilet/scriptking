@@ -2,6 +2,36 @@ import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import streamlit as st
+import os
+
+# ====== LOGIN SYSTEM ======
+LOGIN_ID = os.getenv("LOGIN_ID")
+LOGIN_PW = os.getenv("LOGIN_PW")
+
+st.session_state.setdefault("logged_in", False)
+
+def login_screen():
+    st.title("🔒 로그인 Required")
+
+    user = st.text_input("아이디", placeholder="ID를 입력하세요")
+    pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
+
+    if st.button("로그인"):
+        if user == LOGIN_ID and pw == LOGIN_PW:
+            st.session_state["logged_in"] = True
+            st.experimental_rerun()
+        else:
+            st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
+
+if not st.session_state["logged_in"]:
+    login_screen()
+    st.stop()
+
+# ===== 로그인 성공 이후 실제 앱 시작 =====
+st.write("🎉 로그인 성공! 앱을 사용할 수 있습니다.")
+
+
 
 # Load API Key
 load_dotenv()
