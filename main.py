@@ -290,12 +290,12 @@ with st.sidebar:
 
         # 작은 로그아웃 버튼
         if st.button("🚪 로그아웃", use_container_width=True):
-    st.session_state.logged_in = False
-    st.session_state.current_input = ""
-    st.session_state.last_output = ""
+            st.session_state.logged_in = False
+            st.session_state.current_input = ""
+            st.session_state.last_output = ""
     
     # 로그인 화면을 확실히 보이게 하기 위해 재실행
-    st.experimental_rerun()
+            st.experimental_rerun()
 
 
 # -------------------------
