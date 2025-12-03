@@ -22,7 +22,7 @@ CONFIG_PATH = "config.json"
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("history", [])
 
-# 🔹 로그인 정보 (기본값은 환경변수, 없으면 빈 문자열)
+# 로그인 정보 (기본값은 환경변수, 없으면 빈 문자열)
 st.session_state.setdefault("login_id", LOGIN_ID_ENV or "")
 st.session_state.setdefault("login_pw", LOGIN_PW_ENV or "")
 st.session_state.setdefault("remember_login", False)
@@ -71,7 +71,7 @@ def load_config():
     if isinstance(hist, list):
         st.session_state.history = hist[-5:]
 
-    # 🔹 로그인 관련 정보 로드 (있으면 덮어씀)
+    # 로그인 관련 정보
     if isinstance(data.get("login_id"), str):
         st.session_state.login_id = data["login_id"]
     if isinstance(data.get("login_pw"), str):
@@ -102,7 +102,6 @@ if "config_loaded" not in st.session_state:
 # 로그인 화면
 # -------------------------
 def login_screen():
-    # 로그인 전용 스타일: 폭 좁게 + 세로 중앙 근처
     st.markdown(
         """
         <style>
@@ -117,7 +116,6 @@ def login_screen():
 
     st.title("🔒 로그인 Required")
 
-    # remember_login 이 True면 값을 미리 채워두되, 비밀번호는 ●●● 로 표시됨
     default_id = st.session_state.login_id if st.session_state.remember_login else ""
     default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
 
@@ -128,21 +126,17 @@ def login_screen():
 
         submitted = st.form_submit_button("로그인")
         if submitted:
-            # 현재 저장된 로그인 정보와 비교
             valid_id = st.session_state.login_id or LOGIN_ID_ENV or ""
             valid_pw = st.session_state.login_pw or LOGIN_PW_ENV or ""
 
             if user == valid_id and pw == valid_pw:
-                # 로그인 성공
                 st.session_state["logged_in"] = True
                 st.session_state["remember_login"] = remember
 
-                # 로그인 정보 저장 옵션이 켜져 있으면 ID/PW를 저장
                 if remember:
                     st.session_state.login_id = user
                     st.session_state.login_pw = pw
                 save_config()
-
                 st.rerun()
             else:
                 st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
@@ -163,7 +157,6 @@ st.markdown(
         max-width: 620px;
         padding-top: 4.5rem;
     }
-    /* 검색 입력창만 파란 느낌 주기 위해 class 대신 전체 input 스타일 사용 (간단 버전) */
     .search-input > div > div > input {
         background-color: #eff6ff;
         border: 1px solid #60a5fa;
@@ -182,7 +175,6 @@ def run_generation():
     if not topic:
         return
 
-    # 최근 검색어 관리
     hist = st.session_state.history
     if topic in hist:
         hist.remove(topic)
@@ -190,7 +182,6 @@ def run_generation():
     st.session_state.history = hist[-5:]
     save_config()
 
-    # 작업 지침 + 주제
     task = st.session_state.task_instruction.strip()
     prompt = f"{task}\n\n주제: {topic}"
 
@@ -208,7 +199,7 @@ def run_generation():
 
 
 # -------------------------
-# 사이드바: 모델 + 역할/작업 지침 + 최근 검색어 + 계정 관리
+# 사이드바
 # -------------------------
 with st.sidebar:
     st.markdown("### ⚙️ 설정")
@@ -220,7 +211,6 @@ with st.sidebar:
     )
     st.session_state.model_choice = model
 
-    # 역할 지침
     with st.expander("역할 지침 수정하기", expanded=False):
         st.caption("현재 역할 지침을 아래에서 바로 수정할 수 있습니다.")
         role_edit = st.text_area(
@@ -235,7 +225,6 @@ with st.sidebar:
                 save_config()
             st.success("역할 지침이 저장되었습니다.")
 
-    # 작업 지침
     with st.expander("작업 지침 수정하기", expanded=False):
         st.caption("현재 작업 지침(매번 프롬프트에 공통으로 들어가는 문장입니다):")
         task_edit = st.text_area(
@@ -252,7 +241,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 최근 검색어
     st.markdown("### 🕒 최근 검색어")
     if not st.session_state.history:
         st.caption("최근 검색어가 없습니다.")
@@ -264,11 +252,9 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 🔹 계정 관리 (비밀번호 변경 + 로그아웃) - 공간 최소화, expander로 감싸기
     with st.expander("👤 계정 관리", expanded=False):
         st.caption("비밀번호 변경 및 로그아웃")
 
-        # 비밀번호 변경 폼 (작게)
         with st.form("change_password_form"):
             current_pw = st.text_input("현재 비밀번호", type="password")
             new_pw = st.text_input("새 비밀번호", type="password")
@@ -288,14 +274,11 @@ with st.sidebar:
                     save_config()
                     st.success("비밀번호가 변경되었습니다.")
 
-        # 작은 로그아웃 버튼
         if st.button("🚪 로그아웃", use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.current_input = ""
             st.session_state.last_output = ""
-    
-    # 로그인 화면을 확실히 보이게 하기 위해 재실행
-            st.experimental_rerun()
+            st.rerun()
 
 
 # -------------------------
@@ -324,7 +307,7 @@ st.markdown(
 )
 
 # -------------------------
-# 주제 입력 + 버튼 (조금 더 아래쪽, 가운데)
+# 주제 입력 + 버튼
 # -------------------------
 st.markdown(
     "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:6px;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
@@ -346,7 +329,6 @@ with input_col:
 with btn_col:
     st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
-# 아래쪽 여유
 st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
 # -------------------------
