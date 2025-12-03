@@ -208,7 +208,7 @@ def run_generation():
 
 
 # -------------------------
-# 사이드바: 모델 + 역할/작업 지침 + 최근 검색어 + 로그아웃/비밀번호 변경
+# 사이드바: 모델 + 역할/작업 지침 + 최근 검색어 + 계정 관리
 # -------------------------
 with st.sidebar:
     st.markdown("### ⚙️ 설정")
@@ -252,40 +252,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 🔹 비밀번호 변경
-    with st.expander("🔐 비밀번호 변경", expanded=False):
-        with st.form("change_password_form"):
-            current_pw = st.text_input("현재 비밀번호", type="password")
-            new_pw = st.text_input("새 비밀번호", type="password")
-            new_pw2 = st.text_input("새 비밀번호 확인", type="password")
-            pw_submitted = st.form_submit_button("비밀번호 변경")
-
-            if pw_submitted:
-                # 현재 비밀번호 검증
-                valid_pw = st.session_state.login_pw or LOGIN_PW_ENV or ""
-                if current_pw != valid_pw:
-                    st.error("현재 비밀번호가 올바르지 않습니다.")
-                elif not new_pw:
-                    st.error("새 비밀번호를 입력하세요.")
-                elif new_pw != new_pw2:
-                    st.error("새 비밀번호와 확인이 일치하지 않습니다.")
-                else:
-                    st.session_state.login_pw = new_pw
-                    # 비밀번호 바꾸면 remember_login이 켜져 있을 때 다음부터 새 비밀번호로 저장됨
-                    save_config()
-                    st.success("비밀번호가 변경되었습니다.")
-
-    st.markdown("---")
-
-    # 🔹 로그아웃 버튼
-    if st.button("🚪 로그아웃"):
-        st.session_state.logged_in = False
-        st.session_state.current_input = ""
-        st.session_state.last_output = ""
-        st.rerun()
-
-    st.markdown("---")
-
     # 최근 검색어
     st.markdown("### 🕒 최근 검색어")
     if not st.session_state.history:
@@ -295,6 +261,39 @@ with st.sidebar:
             if st.button(item, key=f"recent_{i}"):
                 st.session_state.current_input = item
                 run_generation()
+
+    st.markdown("---")
+
+    # 🔹 계정 관리 (비밀번호 변경 + 로그아웃) - 공간 최소화, expander로 감싸기
+    with st.expander("👤 계정 관리", expanded=False):
+        st.caption("비밀번호 변경 및 로그아웃")
+
+        # 비밀번호 변경 폼 (작게)
+        with st.form("change_password_form"):
+            current_pw = st.text_input("현재 비밀번호", type="password")
+            new_pw = st.text_input("새 비밀번호", type="password")
+            new_pw2 = st.text_input("새 비밀번호 확인", type="password")
+            pw_submitted = st.form_submit_button("비밀번호 변경")
+
+            if pw_submitted:
+                valid_pw = st.session_state.login_pw or LOGIN_PW_ENV or ""
+                if current_pw != valid_pw:
+                    st.error("현재 비밀번호가 올바르지 않습니다.")
+                elif not new_pw:
+                    st.error("새 비밀번호를 입력하세요.")
+                elif new_pw != new_pw2:
+                    st.error("새 비밀번호와 확인이 일치하지 않습니다.")
+                else:
+                    st.session_state.login_pw = new_pw
+                    save_config()
+                    st.success("비밀번호가 변경되었습니다.")
+
+        # 작은 로그아웃 버튼
+        if st.button("🚪 로그아웃", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.current_input = ""
+            st.session_state.last_output = ""
+            st.rerun()
 
 
 # -------------------------
