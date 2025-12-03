@@ -27,15 +27,21 @@ client = OpenAI(api_key=api_key)
 def login_screen():
     st.title("🔒 로그인 Required")
 
-    user = st.text_input("아이디", placeholder="ID 입력")
-    pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
+    # 폼 형태로 묶기 → 엔터키로 submit 가능
+    with st.form(key="login_form"):
+        user = st.text_input("아이디", placeholder="ID 입력")
+        pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
 
-    if st.button("로그인"):
-        if user == LOGIN_ID and pw == LOGIN_PW:
-            st.session_state["logged_in"] = True
-            st.rerun()
-        else:
-            st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
+        # 폼 제출 버튼 (엔터키로도 작동)
+        submitted = st.form_submit_button("로그인")
+
+        if submitted:
+            if user == LOGIN_ID and pw == LOGIN_PW:
+                st.session_state["logged_in"] = True
+                st.rerun()
+            else:
+                st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
+
 
 if not st.session_state["logged_in"]:
     login_screen()
