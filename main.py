@@ -161,17 +161,13 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
-# 메인 영역 폭 넓게 조정
+# ---- 메인 화면 스타일 ----
 st.markdown(
     """
     <style>
     .block-container {
         max-width: 900px;
         padding-top: 4.5rem;
-    }
-    .search-input > div > div > input {
-        background-color: #eff6ff;
-        border: 1px solid #60a5fa;
     }
     [data-testid="stSidebar"] > div:first-child {
         display: flex;
@@ -184,6 +180,14 @@ st.markdown(
     .sidebar-bottom {
         margin-top: auto;
         padding-top: 16px;
+    }
+
+    /* 메인 뷰의 텍스트 입력창을 Gemini 스타일처럼 */
+    div[data-testid="stAppViewContainer"] div[data-testid="stTextInput"] input {
+        background-color: #f3f4f6;
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        padding: 0.9rem 1.2rem;
     }
     </style>
     """,
@@ -472,30 +476,27 @@ else:
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 (가운데 정렬 + 넓은 필드) --------
-pad_left, center_block, pad_right = st.columns([1, 9, 1])
+# -------- div3: 입력 영역 (하단 가까이, 엔터로 실행) --------
+# 화면 하단 쪽으로 밀기 위한 여백
+st.markdown("<div style='height:20vh;'></div>", unsafe_allow_html=True)
+
+pad_left, center_block, pad_right = st.columns([1, 10, 1])
 
 with center_block:
     st.markdown(
-        "<div style='color:#9CA3AF; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#9CA3AF; font-size:0.9rem; margin-bottom:8px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
-    input_col, btn_col = st.columns([8, 2])
+    st.text_input(
+        label="주제 입력",
+        key="current_input",
+        placeholder="gpt에게 물어보기",
+        label_visibility="collapsed",
+        on_change=run_generation,
+    )
 
-    with input_col:
-        st.text_input(
-            label="주제 입력",
-            key="current_input",
-            placeholder="gpt에게 물어보기",
-            label_visibility="collapsed",
-            on_change=run_generation,
-        )
-
-    with btn_col:
-        st.button("대본 생성", use_container_width=True, on_click=run_generation)
-
-st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
 # -------- 결과 --------
 if st.session_state.last_output:
