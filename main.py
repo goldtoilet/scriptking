@@ -13,6 +13,7 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
+# 전체 textarea 글자 작게
 st.markdown(
     """
     <style>
@@ -169,6 +170,7 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
+# 메인 컨테이너 폭/위치
 st.markdown(
     """
     <style>
@@ -179,6 +181,19 @@ st.markdown(
     .search-input > div > div > input {
         background-color: #eff6ff;
         border: 1px solid #60a5fa;
+    }
+    /* 사이드바 상하 분리 */
+    [data-testid="stSidebar"] > div:first-child {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .sidebar-top {
+        flex-grow: 1;
+    }
+    .sidebar-bottom {
+        margin-top: auto;
+        padding-top: 16px;
     }
     </style>
     """,
@@ -226,7 +241,10 @@ def run_generation():
     st.session_state.last_output = res.choices[0].message.content
 
 
+# ---------- 사이드바 ----------
 with st.sidebar:
+    st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
+
     st.markdown("### 📘 지침")
 
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
@@ -361,7 +379,8 @@ with st.sidebar:
                 save_config()
             st.success("사용자 요청 반영 지침이 저장되었습니다.")
 
-    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
+    # 상단 div 끝내고 하단 설정 영역 시작
+    st.markdown("</div><div class='sidebar-bottom'>", unsafe_allow_html=True)
 
     st.markdown("### ⚙️ 설정")
 
@@ -375,8 +394,6 @@ with st.sidebar:
             label_visibility="collapsed",
         )
         st.session_state.model_choice = model
-
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
     with st.expander("👤 계정 관리", expanded=False):
         st.caption("비밀번호 변경 및 로그아웃")
@@ -406,6 +423,9 @@ with st.sidebar:
             st.session_state.last_output = ""
             st.rerun()
 
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ---------- 메인 상단 로고 ----------
 st.markdown(
     """<div style='text-align:center;'>
     <div style='
@@ -422,6 +442,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ---------- 최근 검색어 ----------
 if st.session_state.history:
     items = st.session_state.history[-5:]
 
@@ -438,10 +459,10 @@ if st.session_state.history:
     st.markdown(
         f"""<div style="
     max-width:460px;
-    margin:56px auto 56px auto;
-    text-align:center;
+    margin:64px auto 72px auto;
+    text-align:left;
 ">
-  <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
+  <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px; text-align:left;">
     최근
   </div>
   {html_items}
@@ -452,7 +473,7 @@ else:
     st.markdown(
         """<div style="
     max-width:460px;
-    margin:56px auto 56px auto;
+    margin:64px auto 72px auto;
     text-align:center;
     font-size:0.8rem;
     color:#d1d5db;
@@ -462,15 +483,16 @@ else:
         unsafe_allow_html=True,
     )
 
+# ---------- 검색 입력 ----------
 st.markdown(
     "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
     unsafe_allow_html=True,
 )
 
-outer_left, outer_mid, outer_right = st.columns([1, 2, 1])
+left_pad, center_block, right_pad = st.columns([1, 4, 1])
 
-with outer_mid:
-    input_col, btn_col = st.columns([4, 1])
+with center_block:
+    input_col, btn_col = st.columns([6, 1])
 
     with input_col:
         st.text_input(
@@ -479,14 +501,14 @@ with outer_mid:
             placeholder="gpt에게 물어보기",
             label_visibility="collapsed",
             on_change=run_generation,
-            help="한 줄로 간단히 적어주세요.",
         )
 
     with btn_col:
         st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
-st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
+# ---------- 결과 ----------
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
     st.write(st.session_state.last_output)
