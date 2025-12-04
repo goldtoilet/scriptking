@@ -13,12 +13,19 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
+# ===== 공통 textarea 스타일 (배경 + 입체감) =====
 st.markdown(
     """
     <style>
     textarea {
-        font-size: 0.8rem !important;
-        line-height: 1.3 !important;
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+        background-color: #F1F4F7 !important;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.06),
+            0 0 0 1px rgba(148, 163, 184, 0.45);
     }
     </style>
     """,
@@ -98,6 +105,8 @@ def load_config():
         st.session_state.login_id = data["login_id"]
     if isinstance(data.get("login_pw"), str):
         st.session_state.login_pw = data["login_pw"]
+    if "remember_login" in data:
+        st.session_state.remember_login = bool(data["remember_login"])
 
 
 def save_config():
@@ -112,6 +121,7 @@ def save_config():
         "history": st.session_state.history[-5:],
         "login_id": st.session_state.login_id,
         "login_pw": st.session_state.login_pw,
+        "remember_login": st.session_state.remember_login,
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -135,7 +145,7 @@ def login_screen():
         unsafe_allow_html=True,
     )
 
-    st.title("🔒 대본 마스터")
+    st.title("🔒 로그인 Required")
 
     default_id = st.session_state.login_id if st.session_state.remember_login else ""
     default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
@@ -143,6 +153,7 @@ def login_screen():
     with st.form(key="login_form"):
         user = st.text_input("아이디", placeholder="ID 입력", value=default_id)
         pw = st.text_input("비밀번호", type="password", placeholder="비밀번호", value=default_pw)
+        remember = st.checkbox("로그인 정보 저장", value=st.session_state.remember_login)
 
         submitted = st.form_submit_button("로그인")
         if submitted:
@@ -151,6 +162,10 @@ def login_screen():
 
             if user == valid_id and pw == valid_pw:
                 st.session_state["logged_in"] = True
+                st.session_state["remember_login"] = remember
+                if remember:
+                    st.session_state.login_id = user
+                    st.session_state.login_pw = pw
                 save_config()
                 st.rerun()
             else:
@@ -161,13 +176,17 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
-# ---- 메인 화면 스타일 ----
+# 메인 영역 폭 넓게 조정 + div3 인풋 스타일
 st.markdown(
     """
     <style>
     .block-container {
         max-width: 900px;
         padding-top: 4.5rem;
+    }
+    .search-input > div > div > input {
+        background-color: #eff6ff;
+        border: 1px solid #60a5fa;
     }
     [data-testid="stSidebar"] > div:first-child {
         display: flex;
@@ -181,13 +200,21 @@ st.markdown(
         margin-top: auto;
         padding-top: 16px;
     }
-
-    /* 메인 뷰의 텍스트 입력창을 Gemini 스타일처럼 */
-    div[data-testid="stAppViewContainer"] div[data-testid="stTextInput"] input {
-        background-color: #f3f4f6;
-        border-radius: 999px;
-        border: 1px solid #e5e7eb;
-        padding: 0.9rem 1.2rem;
+    /* div3 메인 주제 입력창: 입체감 + 배경색 + 높이/폰트 업 */
+    div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
+        background-color: #F1F4F7 !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow:
+            0 2px 4px rgba(15, 23, 42, 0.12),
+            0 0 0 1px rgba(148, 163, 184, 0.45);
+        border-radius: 999px !important;
+        font-size: 1rem !important;
+        padding-top: 0.9rem !important;
+        padding-bottom: 0.9rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        height: 3.2rem !important;  /* 기존보다 약 30px 정도 더 높게 */
+        line-height: 1.5 !important;
     }
     </style>
     """,
@@ -364,7 +391,7 @@ with st.sidebar:
         inst_user_intent_edit = st.text_area(
             "사용자 요청 반영 지침",
             st.session_state.inst_user_intent,
-            height=125,
+            height=155,  # 기존 125에서 약 30px 증가
             key="inst_user_intent_edit",
         )
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
@@ -476,15 +503,12 @@ else:
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 (하단 가까이, 엔터로 실행) --------
-# 화면 하단 쪽으로 밀기 위한 여백
-st.markdown("<div style='height:20vh;'></div>", unsafe_allow_html=True)
+# -------- div3: 입력 영역 (왼쪽 여백 + 포인트 인풋) --------
+pad_left, input_col, btn_col, pad_right = st.columns([1, 7, 2, 1])
 
-pad_left, center_block, pad_right = st.columns([1, 10, 1])
-
-with center_block:
+with input_col:
     st.markdown(
-        "<div style='color:#9CA3AF; font-size:0.9rem; margin-bottom:8px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
@@ -496,7 +520,11 @@ with center_block:
         on_change=run_generation,
     )
 
-st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+with btn_col:
+    st.markdown("<div style='height:22px;'></div>", unsafe_allow_html=True)
+    st.button("대본 생성", use_container_width=True, on_click=run_generation)
+
+st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
 # -------- 결과 --------
 if st.session_state.last_output:
