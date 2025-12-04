@@ -239,7 +239,7 @@ with st.sidebar:
         inst_role_edit = st.text_area(
             "역할 지침",
             st.session_state.inst_role,
-            height=90,
+            height=125,
             key="inst_role_edit",
         )
         if st.button("역할 지침 저장", key="save_role"):
@@ -258,7 +258,7 @@ with st.sidebar:
         inst_tone_edit = st.text_area(
             "톤 & 스타일 지침",
             st.session_state.inst_tone,
-            height=90,
+            height=125,
             key="inst_tone_edit",
         )
         if st.button("톤 & 스타일 지침 저장", key="save_tone"):
@@ -277,7 +277,7 @@ with st.sidebar:
         inst_structure_edit = st.text_area(
             "콘텐츠 구성 지침",
             st.session_state.inst_structure,
-            height=90,
+            height=125,
             key="inst_structure_edit",
         )
         if st.button("콘텐츠 구성 지침 저장", key="save_structure"):
@@ -296,7 +296,7 @@ with st.sidebar:
         inst_depth_edit = st.text_area(
             "정보 밀도 & 조사 심도 지침",
             st.session_state.inst_depth,
-            height=90,
+            height=125,
             key="inst_depth_edit",
         )
         if st.button("정보 밀도 지침 저장", key="save_depth"):
@@ -315,7 +315,7 @@ with st.sidebar:
         inst_forbidden_edit = st.text_area(
             "금지 지침",
             st.session_state.inst_forbidden,
-            height=90,
+            height=125,
             key="inst_forbidden_edit",
         )
         if st.button("금지 지침 저장", key="save_forbidden"):
@@ -334,7 +334,7 @@ with st.sidebar:
         inst_format_edit = st.text_area(
             "출력 형식 지침",
             st.session_state.inst_format,
-            height=90,
+            height=125,
             key="inst_format_edit",
         )
         if st.button("출력 형식 지침 저장", key="save_format"):
@@ -352,7 +352,7 @@ with st.sidebar:
         inst_user_intent_edit = st.text_area(
             "사용자 요청 반영 지침",
             st.session_state.inst_user_intent,
-            height=90,
+            height=125,
             key="inst_user_intent_edit",
         )
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
@@ -361,16 +361,20 @@ with st.sidebar:
                 save_config()
             st.success("사용자 요청 반영 지침이 저장되었습니다.")
 
-    st.markdown("---")
+    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
-    model = st.selectbox(
-        "GPT 모델 선택",
-        ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
-        index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(st.session_state.model_choice),
-    )
-    st.session_state.model_choice = model
+    with st.expander("GPT 모델 선택", expanded=False):
+        model = st.selectbox(
+            "",
+            ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
+            index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(
+                st.session_state.model_choice
+            ),
+            label_visibility="collapsed",
+        )
+        st.session_state.model_choice = model
 
-    st.markdown("---")
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
     with st.expander("👤 계정 관리", expanded=False):
         st.caption("비밀번호 변경 및 로그아웃")
@@ -419,62 +423,66 @@ st.markdown(
 )
 
 if st.session_state.history:
-    items = st.session_state.history[-5:]
-    html_items = ""
-    indent_px = 44
-    for i, h in enumerate(items):
-        if i == 0:
-            html_items += f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                <div style="
-                    width:28px; height:28px;
-                    border-radius:9px;
-                    background:#93c5fd;
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:0.8rem;
-                    font-weight:700;
-                    color:#111827;
-                ">N</div>
-                <div style="font-size:0.85rem; color:#4b5563;">{h}</div>
-            </div>
-            """
-        else:
-            html_items += f"""
-            <div style="
-                font-size:0.85rem;
-                color:#4b5563;
-                margin-left:{indent_px}px;
-                margin-bottom:4px;
-            ">{h}</div>
-            """
+    items = st.session_state.history[-5:]  # 오래된 것 위, 최신 아래
+
+    first = items[0]
+    rest = items[1:]
+
+    first_block = f"""
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+  <div style="
+      width:28px; height:28px;
+      border-radius:9px;
+      background:#93c5fd;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.8rem;
+      font-weight:700;
+      color:#111827;
+  ">N</div>
+  <div style="font-size:0.85rem; color:#4b5563;">{first}</div>
+</div>
+"""
+
+    rest_blocks = ""
+    for h in rest:
+        rest_blocks += f"""
+<div style="
+    font-size:0.85rem;
+    color:#4b5563;
+    margin-left:44px;
+    margin-bottom:4px;
+">{h}</div>
+"""
+
     st.markdown(
         f"""
-        <div style="
-            max-width:460px;
-            margin:40px auto 28px auto;
-            text-align:left;
-        ">
-            <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
-                최근
-            </div>
-            {html_items}
-        </div>
-        """,
+<div style="
+    max-width:460px;
+    margin:40px auto 28px auto;
+    text-align:left;
+">
+  <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
+    최근
+  </div>
+  {first_block}
+  {rest_blocks}
+</div>
+""",
         unsafe_allow_html=True,
     )
 else:
     st.markdown(
         """
-        <div style="
-            max-width:460px;
-            margin:40px auto 28px auto;
-            text-align:left;
-            font-size:0.8rem;
-            color:#d1d5db;
-        ">
-            최근 입력이 없습니다.
-        </div>
-        """,
+<div style="
+    max-width:460px;
+    margin:40px auto 28px auto;
+    text-align:left;
+    font-size:0.8rem;
+    color:#d1d5db;
+">
+  최근 입력이 없습니다.
+</div>
+""",
         unsafe_allow_html=True,
     )
 
