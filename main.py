@@ -227,7 +227,7 @@ def run_generation():
 
 
 with st.sidebar:
-    st.markdown("### 📘 지침")
+    st.markdown("### ⚙️ 설정")
 
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
         st.caption("ChatGPT가 어떤 캐릭터 / 전문가 / 화자인지 정의합니다.")
@@ -239,7 +239,7 @@ with st.sidebar:
         inst_role_edit = st.text_area(
             "역할 지침",
             st.session_state.inst_role,
-            height=125,
+            height=90,
             key="inst_role_edit",
         )
         if st.button("역할 지침 저장", key="save_role"):
@@ -258,7 +258,7 @@ with st.sidebar:
         inst_tone_edit = st.text_area(
             "톤 & 스타일 지침",
             st.session_state.inst_tone,
-            height=125,
+            height=90,
             key="inst_tone_edit",
         )
         if st.button("톤 & 스타일 지침 저장", key="save_tone"):
@@ -277,7 +277,7 @@ with st.sidebar:
         inst_structure_edit = st.text_area(
             "콘텐츠 구성 지침",
             st.session_state.inst_structure,
-            height=125,
+            height=90,
             key="inst_structure_edit",
         )
         if st.button("콘텐츠 구성 지침 저장", key="save_structure"):
@@ -296,7 +296,7 @@ with st.sidebar:
         inst_depth_edit = st.text_area(
             "정보 밀도 & 조사 심도 지침",
             st.session_state.inst_depth,
-            height=125,
+            height=90,
             key="inst_depth_edit",
         )
         if st.button("정보 밀도 지침 저장", key="save_depth"):
@@ -315,7 +315,7 @@ with st.sidebar:
         inst_forbidden_edit = st.text_area(
             "금지 지침",
             st.session_state.inst_forbidden,
-            height=125,
+            height=90,
             key="inst_forbidden_edit",
         )
         if st.button("금지 지침 저장", key="save_forbidden"):
@@ -334,7 +334,7 @@ with st.sidebar:
         inst_format_edit = st.text_area(
             "출력 형식 지침",
             st.session_state.inst_format,
-            height=125,
+            height=90,
             key="inst_format_edit",
         )
         if st.button("출력 형식 지침 저장", key="save_format"):
@@ -352,7 +352,7 @@ with st.sidebar:
         inst_user_intent_edit = st.text_area(
             "사용자 요청 반영 지침",
             st.session_state.inst_user_intent,
-            height=125,
+            height=90,
             key="inst_user_intent_edit",
         )
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
@@ -361,22 +361,16 @@ with st.sidebar:
                 save_config()
             st.success("사용자 요청 반영 지침이 저장되었습니다.")
 
-    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
+    st.markdown("---")
 
-    st.markdown("### ⚙️ 설정")
+    model = st.selectbox(
+        "GPT 모델 선택",
+        ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
+        index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(st.session_state.model_choice),
+    )
+    st.session_state.model_choice = model
 
-    with st.expander("GPT 모델 선택", expanded=False):
-        model = st.selectbox(
-            "",
-            ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
-            index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(
-                st.session_state.model_choice
-            ),
-            label_visibility="collapsed",
-        )
-        st.session_state.model_choice = model
-
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+    st.markdown("---")
 
     with st.expander("👤 계정 관리", expanded=False):
         st.caption("비밀번호 변경 및 로그아웃")
@@ -407,7 +401,8 @@ with st.sidebar:
             st.rerun()
 
 st.markdown(
-    """<div style='text-align:center;'>
+    """
+<div style='text-align:center;'>
     <div style='
         width:100px; height:100px;
         border-radius:50%;
@@ -418,74 +413,92 @@ st.markdown(
         box-shadow: 0 3px 8px rgba(0,0,0,0.08);
     '>N</div>
     <h1 style='margin-top:26px; margin-bottom:6px;'>대본 마스터</h1>
-</div>""",
+</div>
+""",
     unsafe_allow_html=True,
 )
 
 if st.session_state.history:
     items = st.session_state.history[-5:]
-
     html_items = ""
-    for h in items:
-        html_items += f"""
-<div style="
-    font-size:0.85rem;
-    color:#4b5563;
-    margin-bottom:4px;
-">{h}</div>
-"""
-
+    indent_px = 44
+    for i, h in enumerate(items):
+        if i == 0:
+            html_items += f"""
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <div style="
+                    width:28px; height:28px;
+                    border-radius:9px;
+                    background:#93c5fd;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:0.8rem;
+                    font-weight:700;
+                    color:#111827;
+                ">N</div>
+                <div style="font-size:0.85rem; color:#4b5563;">{h}</div>
+            </div>
+            """
+        else:
+            html_items += f"""
+            <div style="
+                font-size:0.85rem;
+                color:#4b5563;
+                margin-left:{indent_px}px;
+                margin-bottom:4px;
+            ">{h}</div>
+            """
     st.markdown(
-        f"""<div style="
-    max-width:460px;
-    margin:56px auto 56px auto;
-    text-align:center;
-">
-  <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
-    최근
-  </div>
-  {html_items}
-</div>""",
+        f"""
+        <div style="
+            max-width:460px;
+            margin:40px auto 28px auto;
+            text-align:left;
+        ">
+            <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
+                최근
+            </div>
+            {html_items}
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 else:
     st.markdown(
-        """<div style="
-    max-width:460px;
-    margin:56px auto 56px auto;
-    text-align:center;
-    font-size:0.8rem;
-    color:#d1d5db;
-">
-  최근 입력이 없습니다.
-</div>""",
+        """
+        <div style="
+            max-width:460px;
+            margin:40px auto 28px auto;
+            text-align:left;
+            font-size:0.8rem;
+            color:#d1d5db;
+        ">
+            최근 입력이 없습니다.
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
 st.markdown(
-    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:6px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
     unsafe_allow_html=True,
 )
 
-outer_left, outer_mid, outer_right = st.columns([1, 2, 1])
+input_col, btn_col = st.columns([4, 1])
 
-with outer_mid:
-    input_col, btn_col = st.columns([4, 1])
+with input_col:
+    st.text_input(
+        label="주제 입력",
+        key="current_input",
+        placeholder="gpt에게 물어보기",
+        label_visibility="collapsed",
+        on_change=run_generation,
+        help="한 줄로 간단히 적어주세요.",
+    )
 
-    with input_col:
-        st.text_input(
-            label="주제 입력",
-            key="current_input",
-            placeholder="gpt에게 물어보기",
-            label_visibility="collapsed",
-            on_change=run_generation,
-            help="한 줄로 간단히 적어주세요.",
-        )
+with btn_col:
+    st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
-    with btn_col:
-        st.button("대본 생성", use_container_width=True, on_click=run_generation)
-
-st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
