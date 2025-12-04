@@ -138,7 +138,7 @@ def login_screen():
         unsafe_allow_html=True,
     )
 
-    st.title("🔒 로그인 Required")
+    st.title("🔒 대본 마스터")
 
     default_id = st.session_state.login_id if st.session_state.remember_login else ""
     default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
