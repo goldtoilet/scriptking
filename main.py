@@ -4,6 +4,8 @@ import os
 import json
 from json import JSONDecodeError
 st.write("현재 작업 디렉토리:", os.getcwd())
+st.write("현재 디렉토리 파일 목록:", os.listdir(os.getcwd()))
+
 st.write("config.json 존재 여부:", os.path.exists("config.json"))
 st.set_page_config(page_title="대본 마스터", page_icon="📝", layout="centered")
 
