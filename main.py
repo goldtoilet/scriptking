@@ -490,7 +490,7 @@ else:
     )
 
 # -------- div3: 입력 영역 (가운데 정렬, 버튼 제거) --------
-pad_left, center_col, pad_right = st.columns([1, 10, 1])
+pad_left, center_col, pad_right = st.columns([1, 8, 1])
 
 with center_col:
     st.markdown(
