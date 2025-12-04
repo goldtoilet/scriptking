@@ -98,8 +98,6 @@ def load_config():
         st.session_state.login_id = data["login_id"]
     if isinstance(data.get("login_pw"), str):
         st.session_state.login_pw = data["login_pw"]
-    if "remember_login" in data:
-        st.session_state.remember_login = bool(data["remember_login"])
 
 
 def save_config():
@@ -114,7 +112,6 @@ def save_config():
         "history": st.session_state.history[-5:],
         "login_id": st.session_state.login_id,
         "login_pw": st.session_state.login_pw,
-        "remember_login": st.session_state.remember_login,
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -146,7 +143,6 @@ def login_screen():
     with st.form(key="login_form"):
         user = st.text_input("아이디", placeholder="ID 입력", value=default_id)
         pw = st.text_input("비밀번호", type="password", placeholder="비밀번호", value=default_pw)
-        remember = st.checkbox("로그인 정보 저장", value=st.session_state.remember_login)
 
         submitted = st.form_submit_button("로그인")
         if submitted:
@@ -155,10 +151,6 @@ def login_screen():
 
             if user == valid_id and pw == valid_pw:
                 st.session_state["logged_in"] = True
-                st.session_state["remember_login"] = remember
-                if remember:
-                    st.session_state.login_id = user
-                    st.session_state.login_pw = pw
                 save_config()
                 st.rerun()
             else:
