@@ -512,10 +512,7 @@ else:
 pad_left, input_col, btn_col, pad_right = st.columns([1, 7, 2, 1])
 
 with input_col:
-    st.markdown(
-        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
-        unsafe_allow_html=True,
-    )
+
 
     st.text_input(
         label="주제 입력",
