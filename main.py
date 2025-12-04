@@ -121,36 +121,35 @@ def save_config():
 
 
 def login_screen():
-    # 로그인 화면 컨테이너 폭/위치
+    # 로그인 화면도 메인과 같은 상단 위치(4.5rem 패딩)
     st.markdown(
         """
         <style>
         .block-container {
             max-width: 420px;
-            padding-top: 18vh;
+            padding-top: 4.5rem;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # 메인과 같은 로고 + 제목
+    # 메인 화면과 동일한 로고 + 제목 블록
     st.markdown(
-        """<div style='text-align:center; margin-bottom:24px;'>
+        """<div style='text-align:center;'>
         <div style='
-            width:80px; height:80px;
+            width:100px; height:100px;
             border-radius:50%;
             background:#93c5fd;
             display:flex; align-items:center; justify-content:center;
-            font-size:32px; margin:auto;
+            font-size:40px; margin:auto;
             color:#111827; font-weight:bold;
             box-shadow: 0 3px 8px rgba(0,0,0,0.08);
         '>N</div>
-        <h2 style='margin-top:18px; margin-bottom:6px;'>대본 마스터</h2>
+        <h1 style='margin-top:26px; margin-bottom:24px;'>대본 마스터</h1>
     </div>""",
         unsafe_allow_html=True,
     )
-
 
     default_id = st.session_state.login_id if st.session_state.remember_login else ""
     default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
@@ -211,7 +210,7 @@ st.markdown(
         background-color: #f9fafb !important;
         border: 2px solid #4f46e5 !important;
         border-radius: 999px !important;
-        padding: 14px 20px !important;
+        padding: 14px 20px !important;   /* 세로 패딩을 늘려서 높이 키움 */
         font-size: 0.95rem !important;
         box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.18);
     }
