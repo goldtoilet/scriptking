@@ -473,7 +473,7 @@ else:
     )
 
 # -------- div3: 입력 영역 (가운데 정렬 + 넓은 필드) --------
-pad_left, center_block, pad_right = st.columns([1, 10, 1])
+pad_left, center_block, pad_right = st.columns([1, 9, 1])
 
 with center_block:
     st.markdown(
