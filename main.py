@@ -4,9 +4,6 @@ import os
 import json
 from json import JSONDecodeError
 
-# -------------------------
-# 기본 설정
-# -------------------------
 st.set_page_config(page_title="대본 마스터", page_icon="📝", layout="centered")
 
 LOGIN_ID_ENV = os.getenv("LOGIN_ID")
@@ -16,9 +13,6 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
-# -------------------------
-# 공통 스타일 (textarea 폰트 작게)
-# -------------------------
 st.markdown(
     """
     <style>
@@ -31,54 +25,36 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -------------------------
-# 세션 기본값
-# -------------------------
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("history", [])
-
-# 로그인 정보
 st.session_state.setdefault("login_id", LOGIN_ID_ENV or "")
 st.session_state.setdefault("login_pw", LOGIN_PW_ENV or "")
 st.session_state.setdefault("remember_login", False)
 
-# ❶ 역할 지침
 st.session_state.setdefault(
     "inst_role",
     "너는 감성적이고 스토리텔링이 뛰어난 다큐멘터리 내레이터다."
 )
-
-# ❷ 톤 & 스타일 지침
 st.session_state.setdefault(
     "inst_tone",
     "톤은 진지하고 서정적이며, 첫 문장은 강렬한 훅으로 시작한다."
 )
-
-# ❸ 콘텐츠 구성 지침
 st.session_state.setdefault(
     "inst_structure",
     "인트로 → 배경 → 사건/전개 → 여운이 남는 결론 순서로 전개한다."
 )
-
-# ❹ 정보 밀도 & 조사 심도 지침
 st.session_state.setdefault(
     "inst_depth",
     "사실 기반 정보를 충분히 포함하되, 사건의 핵심 원인과 결과를 반드시 드러낸다."
 )
-
-# ❺ 금지 지침
 st.session_state.setdefault(
     "inst_forbidden",
     "선정적 표현, 과도한 비유, 독자에게 말을 거는 질문형 표현은 사용하지 않는다."
 )
-
-# ❻ 출력 형식 지침
 st.session_state.setdefault(
     "inst_format",
     "전체 분량은 500자 이상으로 하고, 소제목 없이 자연스러운 내레이션만 생성하며, 문단 사이에는 한 줄 공백을 둔다."
 )
-
-# ❼ 사용자 요청 반영 지침
 st.session_state.setdefault(
     "inst_user_intent",
     "사용자가 입력한 주제를 내러티브의 중심축으로 삼고, 배경 정보를 자연스럽게 녹여 스토리화한다."
@@ -89,23 +65,17 @@ st.session_state.setdefault("last_output", "")
 st.session_state.setdefault("model_choice", "gpt-4o-mini")
 
 
-# -------------------------
-# 설정 JSON 로드/저장
-# -------------------------
 def load_config():
     if not os.path.exists(CONFIG_PATH):
         return
-
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
     except JSONDecodeError:
         return
 
-    # 새 7개 지침
     if isinstance(data.get("inst_role"), str):
         st.session_state.inst_role = data["inst_role"]
-    # 이전 role_instruction 키가 있으면 fallback
     elif isinstance(data.get("role_instruction"), str):
         st.session_state.inst_role = data["role_instruction"]
 
@@ -124,7 +94,6 @@ def load_config():
     if isinstance(hist, list):
         st.session_state.history = hist[-5:]
 
-    # 로그인 관련 정보
     if isinstance(data.get("login_id"), str):
         st.session_state.login_id = data["login_id"]
     if isinstance(data.get("login_pw"), str):
@@ -156,9 +125,6 @@ if "config_loaded" not in st.session_state:
     st.session_state.config_loaded = True
 
 
-# -------------------------
-# 로그인 화면
-# -------------------------
 def login_screen():
     st.markdown(
         """
@@ -190,7 +156,6 @@ def login_screen():
             if user == valid_id and pw == valid_pw:
                 st.session_state["logged_in"] = True
                 st.session_state["remember_login"] = remember
-
                 if remember:
                     st.session_state.login_id = user
                     st.session_state.login_pw = pw
@@ -204,10 +169,6 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
-
-# -------------------------
-# 메인 화면 공통 스타일
-# -------------------------
 st.markdown(
     """
     <style>
@@ -225,15 +186,11 @@ st.markdown(
 )
 
 
-# -------------------------
-# 대본 생성 함수
-# -------------------------
 def run_generation():
     topic = st.session_state.current_input.strip()
     if not topic:
         return
 
-    # 최근 검색어 관리
     hist = st.session_state.history
     if topic in hist:
         hist.remove(topic)
@@ -241,7 +198,6 @@ def run_generation():
     st.session_state.history = hist[-5:]
     save_config()
 
-    # 7개 지침을 모두 system 지침으로 합치기
     system_parts = [
         st.session_state.inst_role,
         st.session_state.inst_tone,
@@ -270,20 +226,9 @@ def run_generation():
     st.session_state.last_output = res.choices[0].message.content
 
 
-# -------------------------
-# 사이드바: 모델 + 7개 지침 + 최근 검색어 + 계정 관리
-# -------------------------
 with st.sidebar:
     st.markdown("### ⚙️ 설정")
 
-    model = st.selectbox(
-        "GPT 모델",
-        ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
-        index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(st.session_state.model_choice),
-    )
-    st.session_state.model_choice = model
-
-    # 1. 역할 지침
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
         st.caption("ChatGPT가 어떤 캐릭터 / 전문가 / 화자인지 정의합니다.")
         st.markdown(
@@ -303,7 +248,6 @@ with st.sidebar:
                 save_config()
             st.success("역할 지침이 저장되었습니다.")
 
-    # 2. 톤 & 스타일
     with st.expander("2. 톤 & 스타일 지침", expanded=False):
         st.caption("어떤 분위기/문체/리듬으로 말할지 정의합니다.")
         st.markdown(
@@ -323,7 +267,6 @@ with st.sidebar:
                 save_config()
             st.success("톤 & 스타일 지침이 저장되었습니다.")
 
-    # 3. 콘텐츠 구성
     with st.expander("3. 콘텐츠 구성 지침", expanded=False):
         st.caption("초반–중반–후반 또는 장면 흐름을 어떻게 짤지 정의합니다.")
         st.markdown(
@@ -343,7 +286,6 @@ with st.sidebar:
                 save_config()
             st.success("콘텐츠 구성 지침이 저장되었습니다.")
 
-    # 4. 정보 밀도 & 조사 심도
     with st.expander("4. 정보 밀도 & 조사 심도 지침", expanded=False):
         st.caption("얼마나 깊게, 얼마나 촘촘하게 설명할지 정의합니다.")
         st.markdown(
@@ -363,7 +305,6 @@ with st.sidebar:
                 save_config()
             st.success("정보 밀도 지침이 저장되었습니다.")
 
-    # 5. 금지 지침
     with st.expander("5. 금지 지침 (Forbidden Rules)", expanded=False):
         st.caption("절대 쓰지 말아야 할 표현/스타일/토픽을 정의합니다.")
         st.markdown(
@@ -383,7 +324,6 @@ with st.sidebar:
                 save_config()
             st.success("금지 지침이 저장되었습니다.")
 
-    # 6. 출력 형식
     with st.expander("6. 출력 형식 지침 (Output Format)", expanded=False):
         st.caption("길이, 단락, 제목, 마크다운 형식 등을 정의합니다.")
         st.markdown(
@@ -403,7 +343,6 @@ with st.sidebar:
                 save_config()
             st.success("출력 형식 지침이 저장되었습니다.")
 
-    # 7. 사용자 요청 반영
     with st.expander("7. 사용자 요청 반영 지침", expanded=False):
         st.caption("사용자가 준 주제/키워드를 어떻게 스토리 안에 녹일지 정의합니다.")
         st.markdown(
@@ -424,19 +363,15 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 최근 검색어
-    st.markdown("### 🕒 최근 검색어")
-    if not st.session_state.history:
-        st.caption("최근 검색어가 없습니다.")
-    else:
-        for i, item in enumerate(reversed(st.session_state.history[-5:])):
-            if st.button(item, key=f"recent_{i}"):
-                st.session_state.current_input = item
-                run_generation()
+    model = st.selectbox(
+        "GPT 모델 선택",
+        ["gpt-4o-mini", "gpt-4o", "gpt-4.1"],
+        index=["gpt-4o-mini", "gpt-4o", "gpt-4.1"].index(st.session_state.model_choice),
+    )
+    st.session_state.model_choice = model
 
     st.markdown("---")
 
-    # 계정 관리 (비밀번호 변경 + 로그아웃)
     with st.expander("👤 계정 관리", expanded=False):
         st.caption("비밀번호 변경 및 로그아웃")
 
@@ -465,37 +400,86 @@ with st.sidebar:
             st.session_state.last_output = ""
             st.rerun()
 
-
-# -------------------------
-# 메인 화면 상단 로고/타이틀
-# -------------------------
 st.markdown(
     """
 <div style='text-align:center;'>
     <div style='
-        width:80px; height:80px;
+        width:100px; height:100px;
         border-radius:50%;
-        background:#bfdbfe;
+        background:#93c5fd;
         display:flex; align-items:center; justify-content:center;
-        font-size:34px; margin:auto;
+        font-size:40px; margin:auto;
         color:#111827; font-weight:bold;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.08);
     '>N</div>
-    <h1 style='margin-top:20px; margin-bottom:6px;'>대본 마스터</h1>
-    <p style='color:#6b7280; font-size:0.9rem; margin-bottom:40px;'>
-        한 줄 주제만 입력하면 감성적인 다큐멘터리 내레이션을 생성합니다.
-    </p>
+    <h1 style='margin-top:26px; margin-bottom:6px;'>대본 마스터</h1>
 </div>
-<div style='height:40px;'></div>
 """,
     unsafe_allow_html=True,
 )
 
-# -------------------------
-# 주제 입력 + 버튼
-# -------------------------
+if st.session_state.history:
+    items = st.session_state.history[-5:]
+    html_items = ""
+    indent_px = 44
+    for i, h in enumerate(items):
+        if i == 0:
+            html_items += f"""
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <div style="
+                    width:28px; height:28px;
+                    border-radius:9px;
+                    background:#93c5fd;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:0.8rem;
+                    font-weight:700;
+                    color:#111827;
+                ">N</div>
+                <div style="font-size:0.85rem; color:#4b5563;">{h}</div>
+            </div>
+            """
+        else:
+            html_items += f"""
+            <div style="
+                font-size:0.85rem;
+                color:#4b5563;
+                margin-left:{indent_px}px;
+                margin-bottom:4px;
+            ">{h}</div>
+            """
+    st.markdown(
+        f"""
+        <div style="
+            max-width:460px;
+            margin:40px auto 28px auto;
+            text-align:left;
+        ">
+            <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
+                최근
+            </div>
+            {html_items}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        """
+        <div style="
+            max-width:460px;
+            margin:40px auto 28px auto;
+            text-align:left;
+            font-size:0.8rem;
+            color:#d1d5db;
+        ">
+            최근 입력이 없습니다.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
-    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:6px;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:6px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
     unsafe_allow_html=True,
 )
 
@@ -505,7 +489,7 @@ with input_col:
     st.text_input(
         label="주제 입력",
         key="current_input",
-        placeholder="예: 축구의 경제학, 인공지능이 바꿀 우리의 일상",
+        placeholder="gpt에게 물어보기",
         label_visibility="collapsed",
         on_change=run_generation,
         help="한 줄로 간단히 적어주세요.",
@@ -514,11 +498,8 @@ with input_col:
 with btn_col:
     st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
-st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
-# -------------------------
-# 결과 출력
-# -------------------------
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
     st.write(st.session_state.last_output)
