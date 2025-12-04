@@ -13,68 +13,12 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
-# ===== 전역 스타일 (배경색 + 인풋/에디터 공통 스타일) =====
 st.markdown(
     """
     <style>
-    /* 전체 화면 배경색 */
-    [data-testid="stAppViewContainer"] {
-        background-color: #F1F4F7;
-    }
-    [data-testid="stHeader"] {
-        background-color: rgba(241,244,247,0.0);
-    }
-
-    /* 메인 컨테이너 폭 */
-    .block-container {
-        max-width: 900px;
-        padding-top: 4.5rem;
-    }
-
-    /* 사이드바 레이아웃 */
-    [data-testid="stSidebar"] > div:first-child {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .sidebar-top {
-        flex-grow: 1;
-    }
-    .sidebar-bottom {
-        margin-top: auto;
-        padding-top: 16px;
-    }
-
-    /* 공통 텍스트에디터(텍스트 영역) 스타일 */
     textarea {
-        font-size: 0.9rem !important;
-        line-height: 1.4 !important;
-        background-color: #ffffff !important;
-        border-radius: 12px !important;
-        border: 1px solid #cbd5e1 !important;
-        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
-    }
-
-    /* 모든 텍스트 인풋(한 줄 입력) 공통 스타일 */
-    div[data-testid="stTextInput"] input {
-        border-radius: 12px !important;
-        border: 1px solid #cbd5e1 !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
-        font-size: 0.95rem !important;
-        padding-top: 0.6rem !important;
-        padding-bottom: 0.6rem !important;
-        padding-left: 0.9rem !important;
-        padding-right: 0.9rem !important;
-    }
-
-    /* div3 메인 주제 입력창만 강조 (높이/폰트 조금 더 크게) */
-    div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
-        border: 1px solid #94a3b8 !important;
-        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
-        font-size: 1rem !important;
-        padding-top: 0.9rem !important;
-        padding-bottom: 0.9rem !important;
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
     }
     </style>
     """,
@@ -182,7 +126,6 @@ if "config_loaded" not in st.session_state:
 
 
 def login_screen():
-    # 로그인 화면 전용 컨테이너 폭/위치
     st.markdown(
         """
         <style>
@@ -225,6 +168,41 @@ def login_screen():
 if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
+
+# 메인 영역 폭 넓게 조정 + div3 인풋 스타일
+st.markdown(
+    """
+    <style>
+    .block-container {
+        max-width: 900px;
+        padding-top: 4.5rem;
+    }
+    .search-input > div > div > input {
+        background-color: #eff6ff;
+        border: 1px solid #60a5fa;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .sidebar-top {
+        flex-grow: 1;
+    }
+    .sidebar-bottom {
+        margin-top: auto;
+        padding-top: 16px;
+    }
+    /* div3 메인 주제 입력창만 포인트 색상 */
+    div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
+        background-color: #eef2ff !important;
+        border: 1px solid #6366f1 !important;
+        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.18);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 def run_generation():
@@ -396,7 +374,7 @@ with st.sidebar:
         inst_user_intent_edit = st.text_area(
             "사용자 요청 반영 지침",
             st.session_state.inst_user_intent,
-            height=155,  # +30px
+            height=125,
             key="inst_user_intent_edit",
         )
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
