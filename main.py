@@ -13,7 +13,6 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
-# 전체 textarea 글자 작게
 st.markdown(
     """
     <style>
@@ -170,7 +169,6 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
-# 메인 컨테이너 폭/위치
 st.markdown(
     """
     <style>
@@ -182,7 +180,6 @@ st.markdown(
         background-color: #eff6ff;
         border: 1px solid #60a5fa;
     }
-    /* 사이드바 상하 분리 */
     [data-testid="stSidebar"] > div:first-child {
         display: flex;
         flex-direction: column;
@@ -241,7 +238,7 @@ def run_generation():
     st.session_state.last_output = res.choices[0].message.content
 
 
-# ---------- 사이드바 ----------
+# -------- 사이드바 --------
 with st.sidebar:
     st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
 
@@ -379,7 +376,6 @@ with st.sidebar:
                 save_config()
             st.success("사용자 요청 반영 지침이 저장되었습니다.")
 
-    # 상단 div 끝내고 하단 설정 영역 시작
     st.markdown("</div><div class='sidebar-bottom'>", unsafe_allow_html=True)
 
     st.markdown("### ⚙️ 설정")
@@ -425,7 +421,7 @@ with st.sidebar:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------- 메인 상단 로고 ----------
+# -------- div1: 상단 로고 + 타이틀 --------
 st.markdown(
     """<div style='text-align:center;'>
     <div style='
@@ -442,7 +438,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- 최근 검색어 ----------
+# -------- div2: 최근 검색어 (프레임 가운데, 내용은 오른쪽으로 100px 이동 + 왼쪽 정렬) --------
 if st.session_state.history:
     items = st.session_state.history[-5:]
 
@@ -460,12 +456,13 @@ if st.session_state.history:
         f"""<div style="
     max-width:460px;
     margin:64px auto 72px auto;
-    text-align:left;
 ">
-  <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px; text-align:left;">
-    최근
+  <div style="margin-left:100px; text-align:left;">
+    <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
+      최근
+    </div>
+    {html_items}
   </div>
-  {html_items}
 </div>""",
         unsafe_allow_html=True,
     )
@@ -474,24 +471,24 @@ else:
         """<div style="
     max-width:460px;
     margin:64px auto 72px auto;
-    text-align:center;
-    font-size:0.8rem;
-    color:#d1d5db;
+    text-align:left;
 ">
-  최근 입력이 없습니다.
+  <div style="margin-left:100px; font-size:0.8rem; color:#d1d5db;">
+    최근 입력이 없습니다.
+  </div>
 </div>""",
         unsafe_allow_html=True,
     )
 
-# ---------- 검색 입력 ----------
-st.markdown(
-    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
-    unsafe_allow_html=True,
-)
-
-left_pad, center_block, right_pad = st.columns([1, 4, 1])
+# -------- div3: 입력 영역 --------
+outer_left, center_block, outer_right = st.columns([1, 4, 1])
 
 with center_block:
+    st.markdown(
+        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        unsafe_allow_html=True,
+    )
+
     input_col, btn_col = st.columns([6, 1])
 
     with input_col:
@@ -508,7 +505,7 @@ with center_block:
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
-# ---------- 결과 ----------
+# -------- 결과 출력 --------
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
     st.write(st.session_state.last_output)
