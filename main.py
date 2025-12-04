@@ -177,10 +177,6 @@ st.markdown(
         max-width: 900px;
         padding-top: 4.5rem;
     }
-    .search-input > div > div > input {
-        background-color: #eff6ff;
-        border: 1px solid #60a5fa;
-    }
     [data-testid="stSidebar"] > div:first-child {
         display: flex;
         flex-direction: column;
@@ -193,11 +189,18 @@ st.markdown(
         margin-top: auto;
         padding-top: 16px;
     }
-    /* div3 메인 주제 입력창만 포인트 색상 */
+
+    /* div3 주제 입력창 스타일 - 높이 & 테두리 강조 */
     div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
-        background-color: #eef2ff !important;
-        border: 1px solid #6366f1 !important;
+        background-color: #f9fafb !important;
+        border: 2px solid #4f46e5 !important;
+        border-radius: 999px !important;
+        padding: 14px 20px !important;   /* 세로 패딩을 늘려서 높이 키움 */
+        font-size: 0.95rem !important;
         box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.18);
+    }
+    div[data-testid="stTextInput"] input[aria-label="주제 입력"]::placeholder {
+        color: #9ca3af;
     }
     </style>
     """,
@@ -486,15 +489,16 @@ else:
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 (왼쪽 여백 + 포인트 인풋) --------
-pad_left, input_col, btn_col, pad_right = st.columns([1, 7, 2, 1])
+# -------- div3: 입력 영역 (가운데 정렬, 버튼 제거) --------
+pad_left, center_col, pad_right = st.columns([1, 10, 1])
 
-with input_col:
+with center_col:
     st.markdown(
         "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
+    # 엔터 입력 시 자동으로 run_generation 호출
     st.text_input(
         label="주제 입력",
         key="current_input",
@@ -502,10 +506,6 @@ with input_col:
         label_visibility="collapsed",
         on_change=run_generation,
     )
-
-with btn_col:
-    st.markdown("<div style='height:22px;'></div>", unsafe_allow_html=True)
-    st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
