@@ -120,12 +120,8 @@ def save_config():
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-if "config_loaded" not in st.session_state:
-    load_config()
-    st.session_state.config_loaded = True
-
-
 def login_screen():
+    # 로그인 화면 컨테이너 폭/위치
     st.markdown(
         """
         <style>
@@ -135,6 +131,23 @@ def login_screen():
         }
         </style>
         """,
+        unsafe_allow_html=True,
+    )
+
+    # 메인과 같은 로고 + 제목
+    st.markdown(
+        """<div style='text-align:center; margin-bottom:24px;'>
+        <div style='
+            width:80px; height:80px;
+            border-radius:50%;
+            background:#93c5fd;
+            display:flex; align-items:center; justify-content:center;
+            font-size:32px; margin:auto;
+            color:#111827; font-weight:bold;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+        '>N</div>
+        <h2 style='margin-top:18px; margin-bottom:6px;'>대본 마스터</h2>
+    </div>""",
         unsafe_allow_html=True,
     )
 
@@ -164,6 +177,10 @@ def login_screen():
             else:
                 st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
+
+if "config_loaded" not in st.session_state:
+    load_config()
+    st.session_state.config_loaded = True
 
 if not st.session_state["logged_in"]:
     login_screen()
@@ -195,7 +212,7 @@ st.markdown(
         background-color: #f9fafb !important;
         border: 2px solid #4f46e5 !important;
         border-radius: 999px !important;
-        padding: 14px 20px !important;   /* 세로 패딩을 늘려서 높이 키움 */
+        padding: 14px 20px !important;
         font-size: 0.95rem !important;
         box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.18);
     }
@@ -457,7 +474,7 @@ if st.session_state.history:
         html_items += f"""
 <div style="
     font-size:0.85rem;
-    color:#4b5563;
+    color:#797979;
     margin-bottom:4px;
 ">{h}</div>
 """
@@ -498,7 +515,6 @@ with center_col:
         unsafe_allow_html=True,
     )
 
-    # 엔터 입력 시 자동으로 run_generation 호출
     st.text_input(
         label="주제 입력",
         key="current_input",
