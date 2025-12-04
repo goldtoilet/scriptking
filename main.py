@@ -13,12 +13,68 @@ client = OpenAI(api_key=api_key)
 
 CONFIG_PATH = "config.json"
 
+# ===== 전역 스타일 (배경색 + 인풋/에디터 공통 스타일) =====
 st.markdown(
     """
     <style>
+    /* 전체 화면 배경색 */
+    [data-testid="stAppViewContainer"] {
+        background-color: #F1F4F7;
+    }
+    [data-testid="stHeader"] {
+        background-color: rgba(241,244,247,0.0);
+    }
+
+    /* 메인 컨테이너 폭 */
+    .block-container {
+        max-width: 900px;
+        padding-top: 4.5rem;
+    }
+
+    /* 사이드바 레이아웃 */
+    [data-testid="stSidebar"] > div:first-child {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .sidebar-top {
+        flex-grow: 1;
+    }
+    .sidebar-bottom {
+        margin-top: auto;
+        padding-top: 16px;
+    }
+
+    /* 공통 텍스트에디터(텍스트 영역) 스타일 */
     textarea {
-        font-size: 0.8rem !important;
-        line-height: 1.3 !important;
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+        background-color: #ffffff !important;
+        border-radius: 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+    }
+
+    /* 모든 텍스트 인풋(한 줄 입력) 공통 스타일 */
+    div[data-testid="stTextInput"] input {
+        border-radius: 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+        font-size: 0.95rem !important;
+        padding-top: 0.6rem !important;
+        padding-bottom: 0.6rem !important;
+        padding-left: 0.9rem !important;
+        padding-right: 0.9rem !important;
+    }
+
+    /* div3 메인 주제 입력창만 강조 (높이/폰트 조금 더 크게) */
+    div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
+        border: 1px solid #94a3b8 !important;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+        font-size: 1rem !important;
+        padding-top: 0.9rem !important;
+        padding-bottom: 0.9rem !important;
     }
     </style>
     """,
@@ -98,6 +154,8 @@ def load_config():
         st.session_state.login_id = data["login_id"]
     if isinstance(data.get("login_pw"), str):
         st.session_state.login_pw = data["login_pw"]
+    if "remember_login" in data:
+        st.session_state.remember_login = bool(data["remember_login"])
 
 
 def save_config():
@@ -112,6 +170,7 @@ def save_config():
         "history": st.session_state.history[-5:],
         "login_id": st.session_state.login_id,
         "login_pw": st.session_state.login_pw,
+        "remember_login": st.session_state.remember_login,
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -123,6 +182,7 @@ if "config_loaded" not in st.session_state:
 
 
 def login_screen():
+    # 로그인 화면 전용 컨테이너 폭/위치
     st.markdown(
         """
         <style>
@@ -135,7 +195,7 @@ def login_screen():
         unsafe_allow_html=True,
     )
 
-    st.title("🔒 대본 마스터")
+    st.title("🔒 로그인 Required")
 
     default_id = st.session_state.login_id if st.session_state.remember_login else ""
     default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
@@ -143,6 +203,7 @@ def login_screen():
     with st.form(key="login_form"):
         user = st.text_input("아이디", placeholder="ID 입력", value=default_id)
         pw = st.text_input("비밀번호", type="password", placeholder="비밀번호", value=default_pw)
+        remember = st.checkbox("로그인 정보 저장", value=st.session_state.remember_login)
 
         submitted = st.form_submit_button("로그인")
         if submitted:
@@ -151,6 +212,10 @@ def login_screen():
 
             if user == valid_id and pw == valid_pw:
                 st.session_state["logged_in"] = True
+                st.session_state["remember_login"] = remember
+                if remember:
+                    st.session_state.login_id = user
+                    st.session_state.login_pw = pw
                 save_config()
                 st.rerun()
             else:
@@ -160,35 +225,6 @@ def login_screen():
 if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
-
-# 메인 영역 폭 넓게 조정
-st.markdown(
-    """
-    <style>
-    .block-container {
-        max-width: 900px;
-        padding-top: 4.5rem;
-    }
-    .search-input > div > div > input {
-        background-color: #eff6ff;
-        border: 1px solid #60a5fa;
-    }
-    [data-testid="stSidebar"] > div:first-child {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .sidebar-top {
-        flex-grow: 1;
-    }
-    .sidebar-bottom {
-        margin-top: auto;
-        padding-top: 16px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 
 def run_generation():
@@ -360,7 +396,7 @@ with st.sidebar:
         inst_user_intent_edit = st.text_area(
             "사용자 요청 반영 지침",
             st.session_state.inst_user_intent,
-            height=125,
+            height=155,  # +30px
             key="inst_user_intent_edit",
         )
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
@@ -472,28 +508,26 @@ else:
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 (가운데 정렬 + 넓은 필드) --------
-pad_left, center_block, pad_right = st.columns([1, 9, 1])
+# -------- div3: 입력 영역 (왼쪽 여백 + 포인트 인풋) --------
+pad_left, input_col, btn_col, pad_right = st.columns([1, 7, 2, 1])
 
-with center_block:
+with input_col:
     st.markdown(
-        "<div style='color:#9CA3AF; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
-    input_col, btn_col = st.columns([8, 2])
+    st.text_input(
+        label="주제 입력",
+        key="current_input",
+        placeholder="gpt에게 물어보기",
+        label_visibility="collapsed",
+        on_change=run_generation,
+    )
 
-    with input_col:
-        st.text_input(
-            label="주제 입력",
-            key="current_input",
-            placeholder="gpt에게 물어보기",
-            label_visibility="collapsed",
-            on_change=run_generation,
-        )
-
-    with btn_col:
-        st.button("대본 생성", use_container_width=True, on_click=run_generation)
+with btn_col:
+    st.markdown("<div style='height:22px;'></div>", unsafe_allow_html=True)
+    st.button("대본 생성", use_container_width=True, on_click=run_generation)
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
