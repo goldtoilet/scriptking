@@ -485,7 +485,7 @@ pad_left, center_block, pad_right = st.columns([1, 10, 1])
 
 with center_block:
     st.markdown(
-        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#333333; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
