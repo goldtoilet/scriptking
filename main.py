@@ -490,11 +490,11 @@ else:
     )
 
 # -------- div3: 입력 영역 (가운데 정렬, 버튼 제거) --------
-pad_left, center_col, pad_right = st.columns([1, 8, 1])
+pad_left, center_col, pad_right = st.columns([1, 7, 1])
 
 with center_col:
     st.markdown(
-        "<div style='color:#9DA3AD; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#BDC6D2; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
