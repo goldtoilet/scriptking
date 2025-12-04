@@ -227,7 +227,7 @@ def run_generation():
 
 
 with st.sidebar:
-    st.markdown("### ⚙️ 설정")
+    st.markdown("### 📘 지침")
 
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
         st.caption("ChatGPT가 어떤 캐릭터 / 전문가 / 화자인지 정의합니다.")
@@ -363,6 +363,8 @@ with st.sidebar:
 
     st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
+    st.markdown("### ⚙️ 설정")
+
     with st.expander("GPT 모델 선택", expanded=False):
         model = st.selectbox(
             "",
@@ -405,8 +407,7 @@ with st.sidebar:
             st.rerun()
 
 st.markdown(
-    """
-<div style='text-align:center;'>
+    """<div style='text-align:center;'>
     <div style='
         width:100px; height:100px;
         border-radius:50%;
@@ -417,96 +418,74 @@ st.markdown(
         box-shadow: 0 3px 8px rgba(0,0,0,0.08);
     '>N</div>
     <h1 style='margin-top:26px; margin-bottom:6px;'>대본 마스터</h1>
-</div>
-""",
+</div>""",
     unsafe_allow_html=True,
 )
 
 if st.session_state.history:
-    items = st.session_state.history[-5:]  # 오래된 것 위, 최신 아래
+    items = st.session_state.history[-5:]
 
-    first = items[0]
-    rest = items[1:]
-
-    first_block = f"""
-<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-  <div style="
-      width:28px; height:28px;
-      border-radius:9px;
-      background:#93c5fd;
-      display:flex; align-items:center; justify-content:center;
-      font-size:0.8rem;
-      font-weight:700;
-      color:#111827;
-  ">N</div>
-  <div style="font-size:0.85rem; color:#4b5563;">{first}</div>
-</div>
-"""
-
-    rest_blocks = ""
-    for h in rest:
-        rest_blocks += f"""
+    html_items = ""
+    for h in items:
+        html_items += f"""
 <div style="
     font-size:0.85rem;
     color:#4b5563;
-    margin-left:44px;
     margin-bottom:4px;
 ">{h}</div>
 """
 
     st.markdown(
-        f"""
-<div style="
+        f"""<div style="
     max-width:460px;
-    margin:40px auto 28px auto;
-    text-align:left;
+    margin:56px auto 56px auto;
+    text-align:center;
 ">
   <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
     최근
   </div>
-  {first_block}
-  {rest_blocks}
-</div>
-""",
+  {html_items}
+</div>""",
         unsafe_allow_html=True,
     )
 else:
     st.markdown(
-        """
-<div style="
+        """<div style="
     max-width:460px;
-    margin:40px auto 28px auto;
-    text-align:left;
+    margin:56px auto 56px auto;
+    text-align:center;
     font-size:0.8rem;
     color:#d1d5db;
 ">
   최근 입력이 없습니다.
-</div>
-""",
+</div>""",
         unsafe_allow_html=True,
     )
 
 st.markdown(
-    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:6px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+    "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
     unsafe_allow_html=True,
 )
 
-input_col, btn_col = st.columns([4, 1])
+outer_left, outer_mid, outer_right = st.columns([1, 2, 1])
 
-with input_col:
-    st.text_input(
-        label="주제 입력",
-        key="current_input",
-        placeholder="gpt에게 물어보기",
-        label_visibility="collapsed",
-        on_change=run_generation,
-        help="한 줄로 간단히 적어주세요.",
-    )
+with outer_mid:
+    input_col, btn_col = st.columns([4, 1])
 
-with btn_col:
-    st.button("대본 생성", use_container_width=True, on_click=run_generation)
+    with input_col:
+        st.text_input(
+            label="주제 입력",
+            key="current_input",
+            placeholder="gpt에게 물어보기",
+            label_visibility="collapsed",
+            on_change=run_generation,
+            help="한 줄로 간단히 적어주세요.",
+        )
 
-st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+    with btn_col:
+        st.button("대본 생성", use_container_width=True, on_click=run_generation)
+
+st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
