@@ -169,11 +169,12 @@ if not st.session_state["logged_in"]:
     login_screen()
     st.stop()
 
+# 메인 영역 폭 넓게 조정
 st.markdown(
     """
     <style>
     .block-container {
-        max-width: 620px;
+        max-width: 900px;
         padding-top: 4.5rem;
     }
     .search-input > div > div > input {
@@ -438,7 +439,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -------- div2: 최근 검색어 (프레임 가운데, 내용은 오른쪽으로 100px 이동 + 왼쪽 정렬) --------
+# -------- div2: 최근 검색어 --------
 if st.session_state.history:
     items = st.session_state.history[-5:]
 
@@ -471,25 +472,24 @@ else:
         """<div style="
     max-width:460px;
     margin:64px auto 72px auto;
-    text-align:left;
 ">
-  <div style="margin-left:100px; font-size:0.8rem; color:#d1d5db;">
+  <div style="margin-left:100px; font-size:0.8rem; color:#d1d5db; text-align:left;">
     최근 입력이 없습니다.
   </div>
 </div>""",
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 --------
-outer_left, center_block, outer_right = st.columns([1, 4, 1])
+# -------- div3: 입력 영역 (가운데 정렬 + 넓은 필드) --------
+pad_left, center_block, pad_right = st.columns([1, 10, 1])
 
 with center_block:
     st.markdown(
-        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:left;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#4b5563; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
         unsafe_allow_html=True,
     )
 
-    input_col, btn_col = st.columns([6, 1])
+    input_col, btn_col = st.columns([8, 2])
 
     with input_col:
         st.text_input(
@@ -505,7 +505,7 @@ with center_block:
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
-# -------- 결과 출력 --------
+# -------- 결과 --------
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
     st.write(st.session_state.last_output)
