@@ -386,7 +386,7 @@ with st.sidebar:
         if selected_set.get("id") != active_id:
             st.session_state.active_instruction_set_id = selected_set.get("id")
             apply_instruction_set(selected_set)
-            st.experimental_rerun()
+            st.rerun()
 
         # 지침 set 삭제
         st.markdown("##### 🗑 지침 set 삭제")
@@ -413,7 +413,7 @@ with st.sidebar:
                 else:
                     st.session_state.active_instruction_set_id = None
             save_config()
-            st.experimental_rerun()
+            st.rerun()
 
     # 새 지침 set 추가 버튼
     if st.button("➕ 지침 set 추가하기", use_container_width=True):
@@ -701,7 +701,7 @@ if st.session_state.get("show_add_instruction_set_editor", False):
 
         if cancel:
             st.session_state.show_add_instruction_set_editor = False
-            st.experimental_rerun()
+            st.rerun()
 
         if submitted:
             if not set_name.strip():
@@ -734,7 +734,7 @@ if st.session_state.get("show_add_instruction_set_editor", False):
                 st.session_state.show_add_instruction_set_editor = False
                 save_config()
                 st.success("✅ 새 지침 set이 저장되었습니다.")
-                st.experimental_rerun()
+                st.rerun()
 
 # -------- div1: 상단 로고 + 타이틀 --------
 st.markdown(
