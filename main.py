@@ -429,16 +429,12 @@ with st.sidebar:
             label_visibility="collapsed",
         )
 
-        # 선택 변경 시 해당 set 적용 + 같은 검색어라도 재생성
+        # 선택 변경 시: 지침만 바꾸고 자동 생성은 안 함
         selected_set = inst_sets[selected_index]
         if selected_set.get("id") != active_id:
             st.session_state.active_instruction_set_id = selected_set.get("id")
             apply_instruction_set(selected_set)
-            # textarea 위젯 상태도 함께 동기화
             sync_inst_to_edit_widgets()
-            # 현재 입력이 있으면 같은 검색어라도 다시 생성
-            if st.session_state.current_input.strip():
-                run_generation()
             st.rerun()
 
     # 새 지침 set 추가 버튼
@@ -699,7 +695,7 @@ with st.sidebar:
                 st.success("✅ config.json이 성공적으로 불러와졌습니다. 설정이 적용됩니다.")
                 st.rerun()
 
-    # === 지침 set 삭제 (config 내보내기/불러오기 밑) ===
+    # === 지침 set 삭제 ===
     with st.expander("🗑 지침 set 삭제", expanded=False):
         sets = st.session_state.instruction_sets
         if not sets:
