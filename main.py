@@ -196,15 +196,28 @@ def sync_active_set_field(field_name: str, value: str):
     sets = st.session_state.get("instruction_sets", [])
     if not active_id or not sets:
         return
-    updated = False
     for s in sets:
         if s.get("id") == active_id:
             s[field_name] = value
-            updated = True
             break
-    if updated:
-        st.session_state.instruction_sets = sets
-        save_config()
+    st.session_state.instruction_sets = sets
+    save_config()
+
+
+def sync_inst_to_edit_widgets():
+    """inst_* 값을 각 textarea 위젯 상태(st.session_state[..._edit])와 동기화"""
+    mapping = [
+        ("inst_role", "inst_role_edit"),
+        ("inst_tone", "inst_tone_edit"),
+        ("inst_structure", "inst_structure_edit"),
+        ("inst_depth", "inst_depth_edit"),
+        ("inst_forbidden", "inst_forbidden_edit"),
+        ("inst_format", "inst_format_edit"),
+        ("inst_user_intent", "inst_user_intent_edit"),
+    ]
+    for inst_key, widget_key in mapping:
+        if inst_key in st.session_state:
+            st.session_state[widget_key] = st.session_state[inst_key]
 
 
 def ensure_active_set_applied():
@@ -215,7 +228,6 @@ def ensure_active_set_applied():
         return
     active_set = next((s for s in sets if s.get("id") == active_id), None)
     if active_set:
-        # 여기서는 config를 다시 저장할 필요는 없으므로 직접 할당만 수행
         for key in [
             "inst_role",
             "inst_tone",
@@ -305,7 +317,6 @@ if not st.session_state.instruction_sets:
     st.session_state.active_instruction_set_id = "default"
     save_config()
 else:
-    # 이미 저장된 active set이 있으면 그 내용으로 inst_* 동기화
     ensure_active_set_applied()
 
 if not st.session_state["logged_in"]:
@@ -423,12 +434,14 @@ with st.sidebar:
         if selected_set.get("id") != active_id:
             st.session_state.active_instruction_set_id = selected_set.get("id")
             apply_instruction_set(selected_set)
+            # textarea 위젯 상태도 함께 동기화
+            sync_inst_to_edit_widgets()
             # 현재 입력이 있으면 같은 검색어라도 다시 생성
             if st.session_state.current_input.strip():
                 run_generation()
             st.rerun()
 
-    # 새 지침 set 추가 버튼 (대본 생성과 무관)
+    # 새 지침 set 추가 버튼
     if st.button("➕ 지침 set 추가하기", use_container_width=True):
         st.session_state.show_add_instruction_set_editor = True
 
@@ -664,6 +677,8 @@ with st.sidebar:
                 if "config_loaded" in st.session_state:
                     del st.session_state["config_loaded"]
                 load_config()
+                ensure_active_set_applied()
+                sync_inst_to_edit_widgets()
 
                 if not st.session_state.instruction_sets:
                     default_set = {
@@ -709,6 +724,7 @@ with st.sidebar:
                             st.session_state.instruction_sets[0].get("id")
                         )
                         ensure_active_set_applied()
+                        sync_inst_to_edit_widgets()
                     else:
                         st.session_state.active_instruction_set_id = None
                 save_config()
@@ -762,8 +778,9 @@ if st.session_state.get("show_add_instruction_set_editor", False):
                 st.session_state.instruction_sets.append(new_set)
                 st.session_state.active_instruction_set_id = new_id
 
-                # 새 set 내용으로 현재 지침 덮어쓰기
                 ensure_active_set_applied()
+                sync_inst_to_edit_widgets()
+
                 st.session_state.show_add_instruction_set_editor = False
                 save_config()
                 st.success("✅ 새 지침 set이 저장되었습니다.")
