@@ -192,6 +192,23 @@ def apply_instruction_set(set_obj: dict):
     save_config()
 
 
+def sync_active_set_field(field_name: str, value: str):
+    """현재 active 지침 set의 필드를 수정 내용으로 동기화"""
+    active_id = st.session_state.get("active_instruction_set_id")
+    sets = st.session_state.get("instruction_sets", [])
+    if not active_id or not sets:
+        return
+    updated = False
+    for s in sets:
+        if s.get("id") == active_id:
+            s[field_name] = value
+            updated = True
+            break
+    if updated:
+        st.session_state.instruction_sets = sets
+        save_config()
+
+
 def login_screen():
     # 로그인 화면도 메인과 같은 상단 위치(4.5rem 패딩)
     st.markdown(
@@ -381,47 +398,23 @@ with st.sidebar:
             label_visibility="collapsed",
         )
 
-        # 선택 변경 시 해당 set 적용
+        # 선택 변경 시 해당 set 적용 + 같은 검색어라도 재생성
         selected_set = inst_sets[selected_index]
         if selected_set.get("id") != active_id:
             st.session_state.active_instruction_set_id = selected_set.get("id")
             apply_instruction_set(selected_set)
+            # 현재 입력이 있으면 같은 검색어라도 다시 생성
+            if st.session_state.current_input.strip():
+                run_generation()
             st.rerun()
 
-        # 지침 set 삭제
-        st.markdown("##### 🗑 지침 set 삭제")
-        del_index = st.selectbox(
-            "삭제할 지침 set",
-            options=list(range(len(inst_sets))),
-            format_func=lambda i: names[i],
-            label_visibility="collapsed",
-            key="delete_instruction_set_select",
-        )
-        if st.button("선택한 지침 set 삭제", use_container_width=True):
-            delete_id = inst_sets[del_index].get("id")
-            # 삭제
-            st.session_state.instruction_sets = [
-                s for s in inst_sets if s.get("id") != delete_id
-            ]
-            # 활성 set 재설정
-            if delete_id == st.session_state.active_instruction_set_id:
-                if st.session_state.instruction_sets:
-                    st.session_state.active_instruction_set_id = (
-                        st.session_state.instruction_sets[0].get("id")
-                    )
-                    apply_instruction_set(st.session_state.instruction_sets[0])
-                else:
-                    st.session_state.active_instruction_set_id = None
-            save_config()
-            st.rerun()
-
-    # 새 지침 set 추가 버튼
+    # 새 지침 set 추가 버튼 (대본 생성과 무관)
     if st.button("➕ 지침 set 추가하기", use_container_width=True):
         st.session_state.show_add_instruction_set_editor = True
 
     st.markdown("### 📘 지침")
 
-    # ===== 개별 지침 편집 =====
+    # ===== 개별 지침 편집 (현재 active set 반영) =====
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
         st.caption("ChatGPT가 어떤 캐릭터 / 전문가 / 화자인지 정의합니다.")
         st.markdown(
@@ -438,7 +431,7 @@ with st.sidebar:
         if st.button("역할 지침 저장", key="save_role"):
             if inst_role_edit.strip():
                 st.session_state.inst_role = inst_role_edit.strip()
-                save_config()
+                sync_active_set_field("inst_role", st.session_state.inst_role)
             st.success("역할 지침이 저장되었습니다.")
 
     with st.expander("2. 톤 & 스타일 지침", expanded=False):
@@ -457,7 +450,7 @@ with st.sidebar:
         if st.button("톤 & 스타일 지침 저장", key="save_tone"):
             if inst_tone_edit.strip():
                 st.session_state.inst_tone = inst_tone_edit.strip()
-                save_config()
+                sync_active_set_field("inst_tone", st.session_state.inst_tone)
             st.success("톤 & 스타일 지침이 저장되었습니다.")
 
     with st.expander("3. 콘텐츠 구성 지침", expanded=False):
@@ -476,7 +469,7 @@ with st.sidebar:
         if st.button("콘텐츠 구성 지침 저장", key="save_structure"):
             if inst_structure_edit.strip():
                 st.session_state.inst_structure = inst_structure_edit.strip()
-                save_config()
+                sync_active_set_field("inst_structure", st.session_state.inst_structure)
             st.success("콘텐츠 구성 지침이 저장되었습니다.")
 
     with st.expander("4. 정보 밀도 & 조사 심도 지침", expanded=False):
@@ -495,7 +488,7 @@ with st.sidebar:
         if st.button("정보 밀도 지침 저장", key="save_depth"):
             if inst_depth_edit.strip():
                 st.session_state.inst_depth = inst_depth_edit.strip()
-                save_config()
+                sync_active_set_field("inst_depth", st.session_state.inst_depth)
             st.success("정보 밀도 지침이 저장되었습니다.")
 
     with st.expander("5. 금지 지침 (Forbidden Rules)", expanded=False):
@@ -514,7 +507,7 @@ with st.sidebar:
         if st.button("금지 지침 저장", key="save_forbidden"):
             if inst_forbidden_edit.strip():
                 st.session_state.inst_forbidden = inst_forbidden_edit.strip()
-                save_config()
+                sync_active_set_field("inst_forbidden", st.session_state.inst_forbidden)
             st.success("금지 지침이 저장되었습니다.")
 
     with st.expander("6. 출력 형식 지침 (Output Format)", expanded=False):
@@ -533,7 +526,7 @@ with st.sidebar:
         if st.button("출력 형식 지침 저장", key="save_format"):
             if inst_format_edit.strip():
                 st.session_state.inst_format = inst_format_edit.strip()
-                save_config()
+                sync_active_set_field("inst_format", st.session_state.inst_format)
             st.success("출력 형식 지침이 저장되었습니다.")
 
     with st.expander("7. 사용자 요청 반영 지침", expanded=False):
@@ -551,7 +544,7 @@ with st.sidebar:
         if st.button("사용자 요청 지침 저장", key="save_user_intent"):
             if inst_user_intent_edit.strip():
                 st.session_state.inst_user_intent = inst_user_intent_edit.strip()
-                save_config()
+                sync_active_set_field("inst_user_intent", st.session_state.inst_user_intent)
             st.success("사용자 요청 반영 지침이 저장되었습니다.")
 
     st.markdown("</div><div class='sidebar-bottom'>", unsafe_allow_html=True)
@@ -596,6 +589,37 @@ with st.sidebar:
             st.session_state.current_input = ""
             st.session_state.last_output = ""
             st.rerun()
+
+    # === 지침 set 삭제 섹션 (설정 아래로 이동) ===
+    with st.expander("🗑 지침 set 삭제", expanded=False):
+        sets = st.session_state.instruction_sets
+        if not sets:
+            st.info("삭제할 지침 set이 없습니다.")
+        else:
+            names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(sets)]
+            del_index = st.selectbox(
+                "삭제할 지침 set 선택",
+                options=list(range(len(sets))),
+                format_func=lambda i: names[i],
+                label_visibility="collapsed",
+                key="delete_instruction_set_select",
+            )
+            if st.button("선택한 지침 set 삭제", use_container_width=True):
+                delete_id = sets[del_index].get("id")
+                st.session_state.instruction_sets = [
+                    s for s in sets if s.get("id") != delete_id
+                ]
+                # 활성 set 재설정
+                if delete_id == st.session_state.active_instruction_set_id:
+                    if st.session_state.instruction_sets:
+                        st.session_state.active_instruction_set_id = (
+                            st.session_state.instruction_sets[0].get("id")
+                        )
+                        apply_instruction_set(st.session_state.instruction_sets[0])
+                    else:
+                        st.session_state.active_instruction_set_id = None
+                save_config()
+                st.rerun()
 
     # === config.json 초기화 섹션 ===
     with st.expander("🧹 설정 초기화 (config.json)", expanded=False):
@@ -685,13 +709,14 @@ if st.session_state.get("show_add_instruction_set_editor", False):
     with st.form("add_instruction_set_form"):
         set_name = st.text_input("지침 set 이름", placeholder="예: 다큐 기본셋 / 연애의 경제학 셋 등")
 
-        role_txt = st.text_area("1. 역할 지침", st.session_state.inst_role, height=80)
-        tone_txt = st.text_area("2. 톤 & 스타일 지침", st.session_state.inst_tone, height=80)
-        struct_txt = st.text_area("3. 콘텐츠 구성 지침", st.session_state.inst_structure, height=80)
-        depth_txt = st.text_area("4. 정보 밀도 & 조사 심도 지침", st.session_state.inst_depth, height=80)
-        forbid_txt = st.text_area("5. 금지 지침", st.session_state.inst_forbidden, height=80)
-        format_txt = st.text_area("6. 출력 형식 지침", st.session_state.inst_format, height=80)
-        intent_txt = st.text_area("7. 사용자 요청 반영 지침", st.session_state.inst_user_intent, height=80)
+        # 새 set은 기본적으로 빈 칸에 붙여넣어서 작성
+        role_txt = st.text_area("1. 역할 지침", "", height=80)
+        tone_txt = st.text_area("2. 톤 & 스타일 지침", "", height=80)
+        struct_txt = st.text_area("3. 콘텐츠 구성 지침", "", height=80)
+        depth_txt = st.text_area("4. 정보 밀도 & 조사 심도 지침", "", height=80)
+        forbid_txt = st.text_area("5. 금지 지침", "", height=80)
+        format_txt = st.text_area("6. 출력 형식 지침", "", height=80)
+        intent_txt = st.text_area("7. 사용자 요청 반영 지침", "", height=80)
 
         col_a, col_b = st.columns(2)
         with col_a:
