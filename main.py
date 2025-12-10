@@ -688,8 +688,107 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown("---")
-st.markdown(f"### 현재 set: {active_name_main}")
+st.markdown(
+    f"<h3 style='text-align:center; margin:0.5rem 0 1.5rem 0;'>{active_name_main}</h3>",
+    unsafe_allow_html=True,
+)
+if st.session_state.get("show_instruction_set_editor", False):
+    edit_id = st.session_state.get("edit_instruction_set_id")
+    edit_mode = bool(edit_id)
 
+    target_set = None
+    if edit_mode:
+        for s in st.session_state.instruction_sets:
+            if s.get("id") == edit_id:
+                target_set = s
+                break
+
+    if edit_mode and target_set:
+        title_text = "✏️ 지침 set 편집"
+        default_name = target_set.get("name", "")
+        role_txt_default = target_set.get("inst_role", "")
+        tone_txt_default = target_set.get("inst_tone", "")
+        struct_txt_default = target_set.get("inst_structure", "")
+        depth_txt_default = target_set.get("inst_depth", "")
+        forbid_txt_default = target_set.get("inst_forbidden", "")
+        format_txt_default = target_set.get("inst_format", "")
+        intent_txt_default = target_set.get("inst_user_intent", "")
+    else:
+        title_text = "✨ 새 지침 set 추가"
+        default_name = ""
+        role_txt_default = ""
+        tone_txt_default = ""
+        struct_txt_default = ""
+        depth_txt_default = ""
+        forbid_txt_default = ""
+        format_txt_default = ""
+        intent_txt_default = ""
+
+    st.markdown(f"## {title_text}")
+
+    with st.form("instruction_set_editor_form"):
+        set_name = st.text_input("지침 set 이름", value=default_name, placeholder="예: 다큐 기본셋 / 연애의 경제학 셋 등")
+
+        role_txt = st.text_area("1. 역할 지침", role_txt_default, height=80)
+        tone_txt = st.text_area("2. 톤 & 스타일 지침", tone_txt_default, height=80)
+        struct_txt = st.text_area("3. 콘텐츠 구성 지침", struct_txt_default, height=80)
+        depth_txt = st.text_area("4. 정보 밀도 & 조사 심도 지침", depth_txt_default, height=80)
+        forbid_txt = st.text_area("5. 금지 지침", forbid_txt_default, height=80)
+        format_txt = st.text_area("6. 출력 형식 지침", format_txt_default, height=80)
+        intent_txt = st.text_area("7. 사용자 요청 반영 지침", intent_txt_default, height=80)
+
+        col_a, col_b = st.columns(2)
+        with col_a:
+            submit_label = "💾 수정 내용 저장" if edit_mode else "💾 지침 set 저장"
+            submitted = st.form_submit_button(submit_label)
+        with col_b:
+            cancel = st.form_submit_button("취소")
+
+        if cancel:
+            st.session_state.show_instruction_set_editor = False
+            st.session_state.edit_instruction_set_id = None
+            st.rerun()
+
+        if submitted:
+            if not set_name.strip():
+                st.error("지침 set 이름을 입력해주세요.")
+            else:
+                if edit_mode and target_set:
+                    target_set["name"] = set_name.strip()
+                    target_set["inst_role"] = role_txt.strip()
+                    target_set["inst_tone"] = tone_txt.strip()
+                    target_set["inst_structure"] = struct_txt.strip()
+                    target_set["inst_depth"] = depth_txt.strip()
+                    target_set["inst_forbidden"] = forbid_txt.strip()
+                    target_set["inst_format"] = format_txt.strip()
+                    target_set["inst_user_intent"] = intent_txt.strip()
+                    for i, s in enumerate(st.session_state.instruction_sets):
+                        if s.get("id") == edit_id:
+                            st.session_state.instruction_sets[i] = target_set
+                            break
+                    st.session_state.active_instruction_set_id = edit_id
+                else:
+                    new_id = str(uuid4())
+                    new_set = {
+                        "id": new_id,
+                        "name": set_name.strip(),
+                        "inst_role": role_txt.strip(),
+                        "inst_tone": tone_txt.strip(),
+                        "inst_structure": struct_txt.strip(),
+                        "inst_depth": depth_txt.strip(),
+                        "inst_forbidden": forbid_txt.strip(),
+                        "inst_format": format_txt.strip(),
+                        "inst_user_intent": intent_txt.strip(),
+                    }
+                    st.session_state.instruction_sets.append(new_set)
+                    st.session_state.active_instruction_set_id = new_id
+
+                ensure_active_set_applied()
+                st.session_state.show_instruction_set_editor = False
+                st.session_state.edit_instruction_set_id = None
+                save_config()
+                st.success("✅ 지침 set이 저장되었습니다.")
+                st.rerun()
 if st.session_state.history:
     items = st.session_state.history[-5:]
     html_items = ""
