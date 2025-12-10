@@ -64,6 +64,11 @@ st.session_state.setdefault("active_instruction_set_id", None)
 st.session_state.setdefault("show_instruction_set_editor", False)
 st.session_state.setdefault("edit_instruction_set_id", None)
 
+st.session_state.setdefault("instset_toolbar_run_id", 0)
+st.session_state.setdefault("instset_delete_mode", False)
+st.session_state.setdefault("show_reset_confirm", False)
+st.session_state.setdefault("reset_input_value", "")
+
 
 def load_config():
     if not os.path.exists(CONFIG_PATH):
@@ -137,6 +142,10 @@ def reset_config():
         "active_instruction_set_id",
         "show_instruction_set_editor",
         "edit_instruction_set_id",
+        "instset_toolbar_run_id",
+        "instset_delete_mode",
+        "show_reset_confirm",
+        "reset_input_value",
     ]:
         if key in st.session_state:
             del st.session_state[key]
@@ -193,6 +202,66 @@ def ensure_active_set_applied():
         ]:
             if key in active_set:
                 setattr(st.session_state, key, active_set.get(key, ""))
+
+
+def run_generation():
+    topic = st.session_state.current_input.strip()
+    if not topic:
+        return
+
+    hist = st.session_state.history
+    if topic in hist:
+        hist.remove(topic)
+    hist.append(topic)
+    st.session_state.history = hist[-5:]
+    save_config()
+
+    system_parts = [
+        st.session_state.inst_role,
+        st.session_state.inst_tone,
+        st.session_state.inst_structure,
+        st.session_state.inst_depth,
+        st.session_state.inst_forbidden,
+        st.session_state.inst_format,
+        st.session_state.inst_user_intent,
+    ]
+    system_text = "\n\n".join(
+        part.strip() for part in system_parts if isinstance(part, str) and part.strip()
+    )
+
+    user_text = f"다음 주제에 맞는 다큐멘터리 내레이션을 작성해줘.\n\n주제: {topic}"
+
+    with st.spinner("🎬 대본을 작성하는 중입니다..."):
+        res = client.chat.completions.create(
+            model=st.session_state.model_choice,
+            messages=[
+                {"role": "system", "content": system_text},
+                {"role": "user", "content": user_text},
+            ],
+            max_tokens=600,
+        )
+
+    st.session_state.last_output = res.choices[0].message.content
+
+
+def build_instruction_preview(source: dict) -> str:
+    parts = []
+    mapping = [
+        ("1. 역할 지침", "inst_role"),
+        ("2. 톤 & 스타일 지침", "inst_tone"),
+        ("3. 콘텐츠 구성 지침", "inst_structure"),
+        ("4. 정보 밀도 & 조사 심도 지침", "inst_depth"),
+        ("5. 금지 지침", "inst_forbidden"),
+        ("6. 출력 형식 지침", "inst_format"),
+        ("7. 사용자 요청 반영 지침", "inst_user_intent"),
+    ]
+    for label, key in mapping:
+        value = source.get(key, "")
+        if isinstance(value, str) and value.strip():
+            parts.append(f"[{label}]\n{value.strip()}")
+    if not parts:
+        return "지침 내용이 없습니다."
+    return "\n\n".join(parts)
 
 
 if "config_loaded" not in st.session_state:
@@ -253,47 +322,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-def run_generation():
-    topic = st.session_state.current_input.strip()
-    if not topic:
-        return
-
-    hist = st.session_state.history
-    if topic in hist:
-        hist.remove(topic)
-    hist.append(topic)
-    st.session_state.history = hist[-5:]
-    save_config()
-
-    system_parts = [
-        st.session_state.inst_role,
-        st.session_state.inst_tone,
-        st.session_state.inst_structure,
-        st.session_state.inst_depth,
-        st.session_state.inst_forbidden,
-        st.session_state.inst_format,
-        st.session_state.inst_user_intent,
-    ]
-    system_text = "\n\n".join(
-        part.strip() for part in system_parts if isinstance(part, str) and part.strip()
-    )
-
-    user_text = f"다음 주제에 맞는 다큐멘터리 내레이션을 작성해줘.\n\n주제: {topic}"
-
-    with st.spinner("🎬 대본을 작성하는 중입니다..."):
-        res = client.chat.completions.create(
-            model=st.session_state.model_choice,
-            messages=[
-                {"role": "system", "content": system_text},
-                {"role": "user", "content": user_text},
-            ],
-            max_tokens=600,
-        )
-
-    st.session_state.last_output = res.choices[0].message.content
-
-
 with st.sidebar:
     st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
 
@@ -325,13 +353,65 @@ with st.sidebar:
             apply_instruction_set(selected_set)
             st.rerun()
 
-    if st.button("➕ 지침 set 추가하기", use_container_width=True):
+    toolbar_key = f"instset_toolbar_{st.session_state['instset_toolbar_run_id']}"
+    action = st.radio(
+        "",
+        ["-", "➕ 추가", "✏️ 편집", "🗑 삭제"],
+        key=toolbar_key,
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    if action == "➕ 추가":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = None
-
-    if st.button("✏️ 지침 set 편집하기", use_container_width=True):
+        st.session_state.instset_toolbar_run_id += 1
+        st.rerun()
+    elif action == "✏️ 편집":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
+        st.session_state.instset_toolbar_run_id += 1
+        st.rerun()
+    elif action == "🗑 삭제":
+        st.session_state.instset_delete_mode = True
+        st.session_state.instset_toolbar_run_id += 1
+        st.rerun()
+
+    if st.session_state.instset_delete_mode:
+        sets = st.session_state.instruction_sets
+        if not sets:
+            st.info("삭제할 지침 set이 없습니다.")
+        else:
+            names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(sets)]
+            del_index = st.selectbox(
+                "삭제할 지침 set 선택",
+                options=list(range(len(sets))),
+                format_func=lambda i: names[i],
+                label_visibility="collapsed",
+                key="delete_instruction_set_select",
+            )
+            col_del1, col_del2 = st.columns(2)
+            with col_del1:
+                if st.button("선택한 지침 set 삭제", use_container_width=True):
+                    delete_id = sets[del_index].get("id")
+                    st.session_state.instruction_sets = [
+                        s for s in sets if s.get("id") != delete_id
+                    ]
+                    if delete_id == st.session_state.active_instruction_set_id:
+                        if st.session_state.instruction_sets:
+                            st.session_state.active_instruction_set_id = (
+                                st.session_state.instruction_sets[0].get("id")
+                            )
+                            ensure_active_set_applied()
+                        else:
+                            st.session_state.active_instruction_set_id = None
+                    save_config()
+                    st.session_state.instset_delete_mode = False
+                    st.rerun()
+            with col_del2:
+                if st.button("취소", use_container_width=True):
+                    st.session_state.instset_delete_mode = False
+                    st.rerun()
 
     st.markdown("### 📘 지침")
 
@@ -484,8 +564,31 @@ with st.sidebar:
 
     with st.expander("🧹 설정 초기화 (config.json)", expanded=False):
         st.caption("모든 지침, 최근 입력, config.json 파일을 초기화합니다. 되돌릴 수 없습니다.")
-        if st.button("config.json 초기화", use_container_width=True):
-            reset_config()
+        if not st.session_state.show_reset_confirm:
+            if st.button("config.json 초기화", use_container_width=True):
+                st.session_state.show_reset_confirm = True
+                st.session_state.reset_input_value = ""
+                st.rerun()
+        else:
+            st.warning("정말 config.json을 초기화하시겠습니까? 아래에 '초기화'를 입력한 뒤 실행을 눌러주세요.")
+            txt = st.text_input(
+                "확인용 단어 입력",
+                key="reset_confirm_input",
+                value=st.session_state.reset_input_value,
+            )
+            st.session_state.reset_input_value = txt
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                if st.button("초기화 실행", use_container_width=True):
+                    if txt.strip() == "초기화":
+                        reset_config()
+                    else:
+                        st.error("입력한 내용이 '초기화'와 일치하지 않습니다.")
+            with col_r2:
+                if st.button("취소", use_container_width=True):
+                    st.session_state.show_reset_confirm = False
+                    st.session_state.reset_input_value = ""
+                    st.rerun()
 
     with st.expander("💾 config.json 내보내기 / 불러오기", expanded=False):
         st.caption("현재 설정을 파일로 저장하거나, 기존 config.json 파일을 불러올 수 있습니다.")
@@ -551,36 +654,46 @@ with st.sidebar:
                 st.success("✅ config.json이 성공적으로 불러와졌습니다. 설정이 적용됩니다.")
                 st.rerun()
 
-    with st.expander("🗑 지침 set 삭제", expanded=False):
-        sets = st.session_state.instruction_sets
-        if not sets:
-            st.info("삭제할 지침 set이 없습니다.")
-        else:
-            names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(sets)]
-            del_index = st.selectbox(
-                "삭제할 지침 set 선택",
-                options=list(range(len(sets))),
-                format_func=lambda i: names[i],
-                label_visibility="collapsed",
-                key="delete_instruction_set_select",
-            )
-            if st.button("선택한 지침 set 삭제", use_container_width=True):
-                delete_id = sets[del_index].get("id")
-                st.session_state.instruction_sets = [
-                    s for s in sets if s.get("id") != delete_id
-                ]
-                if delete_id == st.session_state.active_instruction_set_id:
-                    if st.session_state.instruction_sets:
-                        st.session_state.active_instruction_set_id = (
-                            st.session_state.instruction_sets[0].get("id")
-                        )
-                        ensure_active_set_applied()
-                    else:
-                        st.session_state.active_instruction_set_id = None
-                save_config()
-                st.rerun()
-
     st.markdown("</div>", unsafe_allow_html=True)
+
+inst_sets_main = st.session_state.instruction_sets
+active_id_main = st.session_state.active_instruction_set_id
+active_set_main = None
+active_name_main = "선택된 지침 set 없음"
+
+if inst_sets_main and active_id_main:
+    for s in inst_sets_main:
+        if s.get("id") == active_id_main:
+            active_set_main = s
+            active_name_main = s.get("name", "이름 없는 지침 set")
+            break
+
+if active_set_main is None:
+    active_set_main = {
+        "inst_role": st.session_state.inst_role,
+        "inst_tone": st.session_state.inst_tone,
+        "inst_structure": st.session_state.inst_structure,
+        "inst_depth": st.session_state.inst_depth,
+        "inst_forbidden": st.session_state.inst_forbidden,
+        "inst_format": st.session_state.inst_format,
+        "inst_user_intent": st.session_state.inst_user_intent,
+    }
+
+preview_text = build_instruction_preview(active_set_main)
+
+st.markdown(
+    "<h2 style='margin-bottom:0.15rem; text-align:right; "
+    "color:#374151; font-size:22px;'>scriptking</h2>",
+    unsafe_allow_html=True,
+)
+st.markdown("---")
+st.markdown(f"### 현재 선택된 지침 set: {active_name_main}")
+st.text_area(
+    "",
+    value=preview_text,
+    height=260,
+    disabled=True,
+)
 
 if st.session_state.get("show_instruction_set_editor", False):
     edit_id = st.session_state.get("edit_instruction_set_id")
@@ -680,22 +793,6 @@ if st.session_state.get("show_instruction_set_editor", False):
                 st.success("✅ 지침 set이 저장되었습니다.")
                 st.rerun()
 
-st.markdown(
-    """<div style='text-align:center;'>
-    <div style='
-        width:100px; height:100px;
-        border-radius:50%;
-        background:#93c5fd;
-        display:flex; align-items:center; justify-content:center;
-        font-size:40px; margin:auto;
-        color:#111827; font-weight:bold;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    '>N</div>
-    <h1 style='margin-top:26px; margin-bottom:6px;'>대본 마스터</h1>
-</div>""",
-    unsafe_allow_html=True,
-)
-
 if st.session_state.history:
     items = st.session_state.history[-5:]
     html_items = ""
@@ -710,7 +807,7 @@ if st.session_state.history:
     st.markdown(
         f"""<div style="
     max-width:460px;
-    margin:64px auto 72px auto;
+    margin:40px auto 40px auto;
 ">
   <div style="margin-left:100px; text-align:left;">
     <div style="font-size:0.8rem; color:#9ca3af; margin-bottom:10px;">
@@ -725,7 +822,7 @@ else:
     st.markdown(
         """<div style="
     max-width:460px;
-    margin:64px auto 72px auto;
+    margin:40px auto 40px auto;
 ">
   <div style="margin-left:100px; font-size:0.8rem; color:#d1d5db; text-align:left;">
     최근 입력이 없습니다.
