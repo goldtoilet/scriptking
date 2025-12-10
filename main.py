@@ -360,13 +360,13 @@ with st.sidebar:
     toolbar_key = f"instset_toolbar_{st.session_state['instset_toolbar_run_id']}"
     action = st.radio(
         "",
-        ["-", "+", "edit", "del"],
+        ["-", "add", "edit", "del"],
         key=toolbar_key,
         horizontal=True,
         label_visibility="collapsed",
     )
 
-    if action == "+":
+    if action == "add":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = None
         st.session_state.instset_toolbar_run_id += 1
