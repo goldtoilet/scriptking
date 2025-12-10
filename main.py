@@ -306,19 +306,27 @@ st.markdown(
         padding-top: 16px;
     }
 
-    /* 검색 키워드 입력 필드 스타일 (더 크고 눈에 띄게) */
+    /* 검색 키워드 입력 필드 스타일 (더 크고, 외곽선 제거, 내부 색 포인트) */
     div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
-        background-color: #ffffff !important;
-        border: 2px solid #6366f1 !important;
-        border-radius: 14px !important;
-        padding: 18px 24px !important;
+        background-color: #FEF3C7 !important;  /* 연한 노랑 포인트 */
+        border: 0 !important;
+        border-radius: 20px !important;
+        padding: 22px 28px !important;
         font-size: 1.05rem !important;
         font-weight: 500 !important;
-        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.25);
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55);
+        width: 100% !important;
     }
     div[data-testid="stTextInput"] input[aria-label="주제 입력"]::placeholder {
         color: #6b7280 !important;
         font-size: 0.95rem !important;
+    }
+
+    /* 지침 내용 미리보기 textarea 전용 스타일 */
+    textarea[aria-label="지침 내용 미리보기"] {
+        font-size: 0.9rem !important;
+        color: #374151 !important;          /* 다크 그레이 */
+        background-color: #FFFDE7 !important; /* 연한 노란색 */
     }
     </style>
     """,
@@ -662,13 +670,13 @@ with st.sidebar:
 inst_sets_main = st.session_state.instruction_sets
 active_id_main = st.session_state.active_instruction_set_id
 active_set_main = None
-active_name_main = "선택된 지침 set 없음"
+active_name_main = "선택된 set 없음"
 
 if inst_sets_main and active_id_main:
     for s in inst_sets_main:
         if s.get("id") == active_id_main:
             active_set_main = s
-            active_name_main = s.get("name", "이름 없는 지침 set")
+            active_name_main = s.get("name", "이름 없는 set")
             break
 
 if active_set_main is None:
@@ -690,12 +698,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown("---")
-st.markdown(f"### 현재 선택된 지침 set: {active_name_main}")
+st.markdown(f"### 현재 선택된 set: {active_name_main}")
 st.text_area(
-    "",
+    "지침 내용 미리보기",
     value=preview_text,
-    height=260,
+    height=390,
     disabled=True,
+    label_visibility="collapsed",
 )
 
 if st.session_state.get("show_instruction_set_editor", False):
