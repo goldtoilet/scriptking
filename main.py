@@ -7,8 +7,6 @@ from uuid import uuid4
 
 st.set_page_config(page_title="대본 마스터", page_icon="📝", layout="centered")
 
-LOGIN_ID_ENV = os.getenv("LOGIN_ID")
-LOGIN_PW_ENV = os.getenv("LOGIN_PW")
 api_key = os.getenv("GPT_API_KEY")
 client = OpenAI(api_key=api_key)
 
@@ -26,12 +24,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --------- 기본 세션값 ---------
-st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("history", [])
-st.session_state.setdefault("login_id", LOGIN_ID_ENV or "")
-st.session_state.setdefault("login_pw", LOGIN_PW_ENV or "")
-st.session_state.setdefault("remember_login", False)
 
 st.session_state.setdefault(
     "inst_role",
@@ -66,14 +59,13 @@ st.session_state.setdefault("current_input", "")
 st.session_state.setdefault("last_output", "")
 st.session_state.setdefault("model_choice", "gpt-4o-mini")
 
-# 지침 set 관련 세션값
 st.session_state.setdefault("instruction_sets", [])
 st.session_state.setdefault("active_instruction_set_id", None)
-st.session_state.setdefault("show_add_instruction_set_editor", False)
+st.session_state.setdefault("show_instruction_set_editor", False)
+st.session_state.setdefault("edit_instruction_set_id", None)
 
 
 def load_config():
-    """config.json에서 설정값 로드"""
     if not os.path.exists(CONFIG_PATH):
         return
     try:
@@ -82,7 +74,6 @@ def load_config():
     except JSONDecodeError:
         return
 
-    # 기존 지침 필드
     if isinstance(data.get("inst_role"), str):
         st.session_state.inst_role = data["inst_role"]
     elif isinstance(data.get("role_instruction"), str):
@@ -99,20 +90,10 @@ def load_config():
         if isinstance(data.get(key), str):
             setattr(st.session_state, key, data[key])
 
-    # history
     hist = data.get("history")
     if isinstance(hist, list):
         st.session_state.history = hist[-5:]
 
-    # 로그인 정보
-    if isinstance(data.get("login_id"), str):
-        st.session_state.login_id = data["login_id"]
-    if isinstance(data.get("login_pw"), str):
-        st.session_state.login_pw = data["login_pw"]
-    if "remember_login" in data:
-        st.session_state.remember_login = bool(data["remember_login"])
-
-    # 지침 set 관련
     if isinstance(data.get("instruction_sets"), list):
         st.session_state.instruction_sets = data["instruction_sets"]
     if "active_instruction_set_id" in data:
@@ -120,7 +101,6 @@ def load_config():
 
 
 def save_config():
-    """현재 세션값을 config.json으로 저장"""
     data = {
         "inst_role": st.session_state.inst_role,
         "inst_tone": st.session_state.inst_tone,
@@ -130,9 +110,6 @@ def save_config():
         "inst_format": st.session_state.inst_format,
         "inst_user_intent": st.session_state.inst_user_intent,
         "history": st.session_state.history[-5:],
-        "login_id": st.session_state.login_id,
-        "login_pw": st.session_state.login_pw,
-        "remember_login": st.session_state.remember_login,
         "instruction_sets": st.session_state.get("instruction_sets", []),
         "active_instruction_set_id": st.session_state.get("active_instruction_set_id"),
     }
@@ -141,7 +118,6 @@ def save_config():
 
 
 def reset_config():
-    """config.json 및 세션 전체 초기화"""
     if os.path.exists(CONFIG_PATH):
         os.remove(CONFIG_PATH)
 
@@ -154,20 +130,17 @@ def reset_config():
         "inst_format",
         "inst_user_intent",
         "history",
-        "login_id",
-        "login_pw",
-        "remember_login",
         "current_input",
         "last_output",
         "model_choice",
         "instruction_sets",
         "active_instruction_set_id",
-        "show_add_instruction_set_editor",
+        "show_instruction_set_editor",
+        "edit_instruction_set_id",
     ]:
         if key in st.session_state:
             del st.session_state[key]
 
-    st.session_state["logged_in"] = False
     if "config_loaded" in st.session_state:
         del st.session_state["config_loaded"]
 
@@ -175,7 +148,6 @@ def reset_config():
 
 
 def apply_instruction_set(set_obj: dict):
-    """선택된 지침 set을 현재 지침(inst_*)에 적용"""
     for key in [
         "inst_role",
         "inst_tone",
@@ -191,7 +163,6 @@ def apply_instruction_set(set_obj: dict):
 
 
 def sync_active_set_field(field_name: str, value: str):
-    """현재 active 지침 set의 필드를 수정 내용으로 동기화"""
     active_id = st.session_state.get("active_instruction_set_id")
     sets = st.session_state.get("instruction_sets", [])
     if not active_id or not sets:
@@ -204,24 +175,7 @@ def sync_active_set_field(field_name: str, value: str):
     save_config()
 
 
-def sync_inst_to_edit_widgets():
-    """inst_* 값을 각 textarea 위젯 상태(st.session_state[..._edit])와 동기화"""
-    mapping = [
-        ("inst_role", "inst_role_edit"),
-        ("inst_tone", "inst_tone_edit"),
-        ("inst_structure", "inst_structure_edit"),
-        ("inst_depth", "inst_depth_edit"),
-        ("inst_forbidden", "inst_forbidden_edit"),
-        ("inst_format", "inst_format_edit"),
-        ("inst_user_intent", "inst_user_intent_edit"),
-    ]
-    for inst_key, widget_key in mapping:
-        if inst_key in st.session_state:
-            st.session_state[widget_key] = st.session_state[inst_key]
-
-
 def ensure_active_set_applied():
-    """매 렌더링마다 active set 내용이 inst_*에 반영되도록 보정"""
     sets = st.session_state.get("instruction_sets", [])
     active_id = st.session_state.get("active_instruction_set_id")
     if not sets or not active_id:
@@ -241,66 +195,10 @@ def ensure_active_set_applied():
                 setattr(st.session_state, key, active_set.get(key, ""))
 
 
-def login_screen():
-    st.markdown(
-        """
-        <style>
-        .block-container {
-            max-width: 420px;
-            padding-top: 4.5rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """<div style='text-align:center;'>
-        <div style='
-            width:100px; height:100px;
-            border-radius:50%;
-            background:#93c5fd;
-            display:flex; align-items:center; justify-content:center;
-            font-size:40px; margin:auto;
-            color:#111827; font-weight:bold;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-        '>N</div>
-        <h1 style='margin-top:26px; margin-bottom:24px;'>대본 마스터</h1>
-    </div>""",
-        unsafe_allow_html=True,
-    )
-
-    default_id = st.session_state.login_id if st.session_state.remember_login else ""
-    default_pw = st.session_state.login_pw if st.session_state.remember_login else ""
-
-    with st.form(key="login_form"):
-        user = st.text_input("아이디", placeholder="ID 입력", value=default_id)
-        pw = st.text_input("비밀번호", type="password", placeholder="비밀번호", value=default_pw)
-        remember = st.checkbox("로그인 정보 저장", value=st.session_state.remember_login)
-
-        submitted = st.form_submit_button("로그인")
-        if submitted:
-            valid_id = st.session_state.login_id or LOGIN_ID_ENV or ""
-            valid_pw = st.session_state.login_pw or LOGIN_PW_ENV or ""
-
-            if user == valid_id and pw == valid_pw:
-                st.session_state["logged_in"] = True
-                st.session_state["remember_login"] = remember
-                if remember:
-                    st.session_state.login_id = user
-                    st.session_state.login_pw = pw
-                save_config()
-                st.rerun()
-            else:
-                st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
-
-
-# --------- config 최초 로드 ---------
 if "config_loaded" not in st.session_state:
     load_config()
     st.session_state.config_loaded = True
 
-# 지침 set이 없다면 현재 지침으로 기본 set 생성
 if not st.session_state.instruction_sets:
     default_set = {
         "id": "default",
@@ -319,11 +217,6 @@ if not st.session_state.instruction_sets:
 else:
     ensure_active_set_applied()
 
-if not st.session_state["logged_in"]:
-    login_screen()
-    st.stop()
-
-# 메인 영역 폭 넓게 조정 + div3 인풋 스타일
 st.markdown(
     """
     <style>
@@ -401,11 +294,9 @@ def run_generation():
     st.session_state.last_output = res.choices[0].message.content
 
 
-# -------- 사이드바 --------
 with st.sidebar:
     st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
 
-    # ===== 지침 set 섹션 =====
     st.markdown("### 🎛 지침 set")
 
     inst_sets = st.session_state.instruction_sets
@@ -414,7 +305,6 @@ with st.sidebar:
     if inst_sets:
         names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(inst_sets)]
 
-        # active id에 해당하는 index 찾기
         active_index = 0
         for i, s in enumerate(inst_sets):
             if s.get("id") == active_id:
@@ -429,21 +319,22 @@ with st.sidebar:
             label_visibility="collapsed",
         )
 
-        # 선택 변경 시: 지침만 바꾸고 자동 생성은 안 함
         selected_set = inst_sets[selected_index]
         if selected_set.get("id") != active_id:
             st.session_state.active_instruction_set_id = selected_set.get("id")
             apply_instruction_set(selected_set)
-            sync_inst_to_edit_widgets()
             st.rerun()
 
-    # 새 지침 set 추가 버튼
     if st.button("➕ 지침 set 추가하기", use_container_width=True):
-        st.session_state.show_add_instruction_set_editor = True
+        st.session_state.show_instruction_set_editor = True
+        st.session_state.edit_instruction_set_id = None
+
+    if st.button("✏️ 지침 set 편집하기", use_container_width=True):
+        st.session_state.show_instruction_set_editor = True
+        st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
 
     st.markdown("### 📘 지침")
 
-    # ===== 개별 지침 편집 (현재 active set 반영) =====
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
         st.caption("ChatGPT가 어떤 캐릭터 / 전문가 / 화자인지 정의합니다.")
         st.markdown(
@@ -578,7 +469,6 @@ with st.sidebar:
 
     st.markdown("</div><div class='sidebar-bottom'>", unsafe_allow_html=True)
 
-    # ===== 설정 섹션 =====
     st.markdown("### ⚙️ 설정")
 
     with st.expander("GPT 모델 선택", expanded=False):
@@ -592,41 +482,11 @@ with st.sidebar:
         )
         st.session_state.model_choice = model
 
-    with st.expander("👤 계정 관리", expanded=False):
-        st.caption("비밀번호 변경 및 로그아웃")
-
-        with st.form("change_password_form"):
-            current_pw = st.text_input("현재 비밀번호", type="password")
-            new_pw = st.text_input("새 비밀번호", type="password")
-            new_pw2 = st.text_input("새 비밀번호 확인", type="password")
-            pw_submitted = st.form_submit_button("비밀번호 변경")
-
-            if pw_submitted:
-                valid_pw = st.session_state.login_pw or LOGIN_PW_ENV or ""
-                if current_pw != valid_pw:
-                    st.error("현재 비밀번호가 올바르지 않습니다.")
-                elif not new_pw:
-                    st.error("새 비밀번호를 입력하세요.")
-                elif new_pw != new_pw2:
-                    st.error("새 비밀번호와 확인이 일치하지 않습니다.")
-                else:
-                    st.session_state.login_pw = new_pw
-                    save_config()
-                    st.success("비밀번호가 변경되었습니다.")
-
-        if st.button("🚪 로그아웃", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.current_input = ""
-            st.session_state.last_output = ""
-            st.rerun()
-
-    # config 초기화
     with st.expander("🧹 설정 초기화 (config.json)", expanded=False):
-        st.caption("모든 지침, 최근 입력, 로그인 정보, config.json 파일을 초기화합니다. 되돌릴 수 없습니다.")
+        st.caption("모든 지침, 최근 입력, config.json 파일을 초기화합니다. 되돌릴 수 없습니다.")
         if st.button("config.json 초기화", use_container_width=True):
             reset_config()
 
-    # config 내보내기 / 불러오기
     with st.expander("💾 config.json 내보내기 / 불러오기", expanded=False):
         st.caption("현재 설정을 파일로 저장하거나, 기존 config.json 파일을 불러올 수 있습니다.")
 
@@ -639,9 +499,6 @@ with st.sidebar:
             "inst_format": st.session_state.inst_format,
             "inst_user_intent": st.session_state.inst_user_intent,
             "history": st.session_state.history[-5:],
-            "login_id": st.session_state.login_id,
-            "login_pw": st.session_state.login_pw,
-            "remember_login": st.session_state.remember_login,
             "instruction_sets": st.session_state.get("instruction_sets", []),
             "active_instruction_set_id": st.session_state.get("active_instruction_set_id"),
         }
@@ -674,7 +531,6 @@ with st.sidebar:
                     del st.session_state["config_loaded"]
                 load_config()
                 ensure_active_set_applied()
-                sync_inst_to_edit_widgets()
 
                 if not st.session_state.instruction_sets:
                     default_set = {
@@ -695,7 +551,6 @@ with st.sidebar:
                 st.success("✅ config.json이 성공적으로 불러와졌습니다. 설정이 적용됩니다.")
                 st.rerun()
 
-    # === 지침 set 삭제 ===
     with st.expander("🗑 지침 set 삭제", expanded=False):
         sets = st.session_state.instruction_sets
         if not sets:
@@ -720,7 +575,6 @@ with st.sidebar:
                             st.session_state.instruction_sets[0].get("id")
                         )
                         ensure_active_set_applied()
-                        sync_inst_to_edit_widgets()
                     else:
                         st.session_state.active_instruction_set_id = None
                 save_config()
@@ -728,61 +582,104 @@ with st.sidebar:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------- 메인 영역 --------
+if st.session_state.get("show_instruction_set_editor", False):
+    edit_id = st.session_state.get("edit_instruction_set_id")
+    edit_mode = bool(edit_id)
 
-# 지침 set 추가 에디터
-if st.session_state.get("show_add_instruction_set_editor", False):
-    st.markdown("## ✨ 새 지침 set 추가")
+    target_set = None
+    if edit_mode:
+        for s in st.session_state.instruction_sets:
+            if s.get("id") == edit_id:
+                target_set = s
+                break
 
-    with st.form("add_instruction_set_form"):
-        set_name = st.text_input("지침 set 이름", placeholder="예: 다큐 기본셋 / 연애의 경제학 셋 등")
+    if edit_mode and target_set:
+        title_text = "✏️ 지침 set 편집"
+        default_name = target_set.get("name", "")
+        role_txt_default = target_set.get("inst_role", "")
+        tone_txt_default = target_set.get("inst_tone", "")
+        struct_txt_default = target_set.get("inst_structure", "")
+        depth_txt_default = target_set.get("inst_depth", "")
+        forbid_txt_default = target_set.get("inst_forbidden", "")
+        format_txt_default = target_set.get("inst_format", "")
+        intent_txt_default = target_set.get("inst_user_intent", "")
+    else:
+        title_text = "✨ 새 지침 set 추가"
+        default_name = ""
+        role_txt_default = ""
+        tone_txt_default = ""
+        struct_txt_default = ""
+        depth_txt_default = ""
+        forbid_txt_default = ""
+        format_txt_default = ""
+        intent_txt_default = ""
 
-        role_txt = st.text_area("1. 역할 지침", "", height=80)
-        tone_txt = st.text_area("2. 톤 & 스타일 지침", "", height=80)
-        struct_txt = st.text_area("3. 콘텐츠 구성 지침", "", height=80)
-        depth_txt = st.text_area("4. 정보 밀도 & 조사 심도 지침", "", height=80)
-        forbid_txt = st.text_area("5. 금지 지침", "", height=80)
-        format_txt = st.text_area("6. 출력 형식 지침", "", height=80)
-        intent_txt = st.text_area("7. 사용자 요청 반영 지침", "", height=80)
+    st.markdown(f"## {title_text}")
+
+    with st.form("instruction_set_editor_form"):
+        set_name = st.text_input("지침 set 이름", value=default_name, placeholder="예: 다큐 기본셋 / 연애의 경제학 셋 등")
+
+        role_txt = st.text_area("1. 역할 지침", role_txt_default, height=80)
+        tone_txt = st.text_area("2. 톤 & 스타일 지침", tone_txt_default, height=80)
+        struct_txt = st.text_area("3. 콘텐츠 구성 지침", struct_txt_default, height=80)
+        depth_txt = st.text_area("4. 정보 밀도 & 조사 심도 지침", depth_txt_default, height=80)
+        forbid_txt = st.text_area("5. 금지 지침", forbid_txt_default, height=80)
+        format_txt = st.text_area("6. 출력 형식 지침", format_txt_default, height=80)
+        intent_txt = st.text_area("7. 사용자 요청 반영 지침", intent_txt_default, height=80)
 
         col_a, col_b = st.columns(2)
         with col_a:
-            submitted = st.form_submit_button("💾 지침 set 저장")
+            submit_label = "💾 수정 내용 저장" if edit_mode else "💾 지침 set 저장"
+            submitted = st.form_submit_button(submit_label)
         with col_b:
             cancel = st.form_submit_button("취소")
 
         if cancel:
-            st.session_state.show_add_instruction_set_editor = False
+            st.session_state.show_instruction_set_editor = False
+            st.session_state.edit_instruction_set_id = None
             st.rerun()
 
         if submitted:
             if not set_name.strip():
                 st.error("지침 set 이름을 입력해주세요.")
             else:
-                new_id = str(uuid4())
-                new_set = {
-                    "id": new_id,
-                    "name": set_name.strip(),
-                    "inst_role": role_txt.strip(),
-                    "inst_tone": tone_txt.strip(),
-                    "inst_structure": struct_txt.strip(),
-                    "inst_depth": depth_txt.strip(),
-                    "inst_forbidden": forbid_txt.strip(),
-                    "inst_format": format_txt.strip(),
-                    "inst_user_intent": intent_txt.strip(),
-                }
-                st.session_state.instruction_sets.append(new_set)
-                st.session_state.active_instruction_set_id = new_id
+                if edit_mode and target_set:
+                    target_set["name"] = set_name.strip()
+                    target_set["inst_role"] = role_txt.strip()
+                    target_set["inst_tone"] = tone_txt.strip()
+                    target_set["inst_structure"] = struct_txt.strip()
+                    target_set["inst_depth"] = depth_txt.strip()
+                    target_set["inst_forbidden"] = forbid_txt.strip()
+                    target_set["inst_format"] = format_txt.strip()
+                    target_set["inst_user_intent"] = intent_txt.strip()
+                    for i, s in enumerate(st.session_state.instruction_sets):
+                        if s.get("id") == edit_id:
+                            st.session_state.instruction_sets[i] = target_set
+                            break
+                    st.session_state.active_instruction_set_id = edit_id
+                else:
+                    new_id = str(uuid4())
+                    new_set = {
+                        "id": new_id,
+                        "name": set_name.strip(),
+                        "inst_role": role_txt.strip(),
+                        "inst_tone": tone_txt.strip(),
+                        "inst_structure": struct_txt.strip(),
+                        "inst_depth": depth_txt.strip(),
+                        "inst_forbidden": forbid_txt.strip(),
+                        "inst_format": format_txt.strip(),
+                        "inst_user_intent": intent_txt.strip(),
+                    }
+                    st.session_state.instruction_sets.append(new_set)
+                    st.session_state.active_instruction_set_id = new_id
 
                 ensure_active_set_applied()
-                sync_inst_to_edit_widgets()
-
-                st.session_state.show_add_instruction_set_editor = False
+                st.session_state.show_instruction_set_editor = False
+                st.session_state.edit_instruction_set_id = None
                 save_config()
-                st.success("✅ 새 지침 set이 저장되었습니다.")
+                st.success("✅ 지침 set이 저장되었습니다.")
                 st.rerun()
 
-# -------- div1: 상단 로고 + 타이틀 --------
 st.markdown(
     """<div style='text-align:center;'>
     <div style='
@@ -799,7 +696,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -------- div2: 최근 검색어 --------
 if st.session_state.history:
     items = st.session_state.history[-5:]
     html_items = ""
@@ -838,7 +734,6 @@ else:
         unsafe_allow_html=True,
     )
 
-# -------- div3: 입력 영역 --------
 pad_left, center_col, pad_right = st.columns([1, 7, 1])
 
 with center_col:
@@ -857,7 +752,6 @@ with center_col:
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
-# -------- 결과 --------
 if st.session_state.last_output:
     st.subheader("📄 생성된 내레이션")
     st.write(st.session_state.last_output)
