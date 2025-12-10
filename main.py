@@ -5,7 +5,7 @@ import json
 from json import JSONDecodeError
 from uuid import uuid4
 
-st.set_page_config(page_title="키워드에 맞는 대본을 뽑아드립니다.scriptking", page_icon="📝", layout="centered")
+st.set_page_config(page_title="scriptking", page_icon="📝", layout="centered")
 
 api_key = os.getenv("GPT_API_KEY")
 client = OpenAI(api_key=api_key)
