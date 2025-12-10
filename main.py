@@ -356,29 +356,33 @@ with st.sidebar:
             apply_instruction_set(selected_set)
             st.rerun()
 
+    # ==== 도구 라디오 버튼: -, 추가, 편집, 삭제 ====
     toolbar_key = f"instset_toolbar_{st.session_state['instset_toolbar_run_id']}"
     action = st.radio(
         "",
-        ["-", "➕", "✏️", "🗑"],
+        ["-", "추가", "편집", "삭제"],
         key=toolbar_key,
         horizontal=True,
         label_visibility="collapsed",
     )
 
-    if action == "➕":
+    if action == "추가":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = None
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
-    elif action == "✏️":
+    elif action == "편집":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
-    elif action == "🗑":
+    elif action == "삭제":
         st.session_state.instset_delete_mode = True
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
+
+    # 도구 아래 구분선
+    st.markdown("---")
 
     if st.session_state.instset_delete_mode:
         sets = st.session_state.instruction_sets
@@ -789,6 +793,7 @@ if st.session_state.get("show_instruction_set_editor", False):
                 save_config()
                 st.success("✅ 지침 set이 저장되었습니다.")
                 st.rerun()
+
 if st.session_state.history:
     items = st.session_state.history[-5:]
     html_items = ""
