@@ -359,23 +359,23 @@ with st.sidebar:
     toolbar_key = f"instset_toolbar_{st.session_state['instset_toolbar_run_id']}"
     action = st.radio(
         "",
-        ["-", "➕ 추가", "✏️ 편집", "🗑 삭제"],
+        ["-", "➕", "✏️", "🗑"],
         key=toolbar_key,
         horizontal=True,
         label_visibility="collapsed",
     )
 
-    if action == "➕ 추가":
+    if action == "➕":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = None
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
-    elif action == "✏️ 편집":
+    elif action == "✏️":
         st.session_state.show_instruction_set_editor = True
         st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
-    elif action == "🗑 삭제":
+    elif action == "🗑":
         st.session_state.instset_delete_mode = True
         st.session_state.instset_toolbar_run_id += 1
         st.rerun()
