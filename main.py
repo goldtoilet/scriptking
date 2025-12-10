@@ -306,16 +306,19 @@ st.markdown(
         padding-top: 16px;
     }
 
+    /* 검색 키워드 입력 필드 스타일 (더 크고 눈에 띄게) */
     div[data-testid="stTextInput"] input[aria-label="주제 입력"] {
-        background-color: #f9fafb !important;
-        border: 2px solid #4f46e5 !important;
-        border-radius: 999px !important;
-        padding: 14px 20px !important;
-        font-size: 0.95rem !important;
-        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.18);
+        background-color: #ffffff !important;
+        border: 2px solid #6366f1 !important;
+        border-radius: 14px !important;
+        padding: 18px 24px !important;
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.25);
     }
     div[data-testid="stTextInput"] input[aria-label="주제 입력"]::placeholder {
-        color: #9ca3af;
+        color: #6b7280 !important;
+        font-size: 0.95rem !important;
     }
     </style>
     """,
@@ -835,7 +838,8 @@ pad_left, center_col, pad_right = st.columns([1, 7, 1])
 
 with center_col:
     st.markdown(
-        "<div style='color:#BDC6D2; font-size:0.9rem; margin-bottom:10px; text-align:center;'>한 문장 또는 짧은 키워드로 주제를 적어주세요.</div>",
+        "<div style='color:#4b5563; font-size:1.0rem; font-weight:500; "
+        "margin-bottom:12px; text-align:center;'>검색 키워드를 입력해 주세요.</div>",
         unsafe_allow_html=True,
     )
 
