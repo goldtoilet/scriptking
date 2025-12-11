@@ -331,7 +331,6 @@ st.markdown(
 with st.sidebar:
     st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
 
-    # 🔽 여기부터는 기존 '📘 지침'만 유지
     st.markdown("### 📘 지침")
 
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
@@ -610,7 +609,7 @@ st.markdown(
 st.markdown("---")
 
 # ============================
-# 우측 상단 지침 set 선택 & 관리 버튼
+# 지침 set 선택 & 관리 컨트롤 (가운데 정렬)
 # ============================
 if inst_sets_main:
     names_main = [s.get("name", f"셋 {i+1}") for i, s in enumerate(inst_sets_main)]
@@ -620,12 +619,12 @@ if inst_sets_main:
             active_index_main = i
             break
 
-    col_sets, col_actions = st.columns([3, 2])
-
-    with col_sets:
+    # 1) 지침 set 선택 (가운데)
+    col_l1, col_c1, col_r1 = st.columns([1, 4, 1])
+    with col_c1:
         st.markdown(
             "<div style='font-size:0.85rem; color:#6b7280; "
-            "margin-bottom:0.2rem; text-align:left;'>지침 set 선택</div>",
+            "margin-bottom:0.2rem; text-align:center;'>지침 set 선택</div>",
             unsafe_allow_html=True,
         )
         selected_index_main = st.radio(
@@ -644,10 +643,12 @@ if inst_sets_main:
             save_config()
             st.rerun()
 
-    with col_actions:
+    # 2) 지침 set 관리 (아래, 가운데)
+    col_l2, col_c2, col_r2 = st.columns([1, 4, 1])
+    with col_c2:
         st.markdown(
             "<div style='font-size:0.85rem; color:#6b7280; "
-            "margin-bottom:0.2rem; text-align:right;'>지침 set 관리</div>",
+            "margin-top:0.6rem; margin-bottom:0.2rem; text-align:center;'>지침 set 관리</div>",
             unsafe_allow_html=True,
         )
         toolbar_key = f"instset_toolbar_main_{st.session_state['instset_toolbar_run_id']}"
@@ -674,16 +675,19 @@ if inst_sets_main:
             st.session_state.instset_toolbar_run_id += 1
             st.rerun()
 
-# 가운데 지침 set 이름
+# 컨트롤 아래 separator bar
+st.markdown("---")
+
+# 현재 선택된 지침 set 이름 (더 크게, 가운데 정렬 / 아래 separator 없음)
 st.markdown(
-    f"<h3 style='text-align:center; margin:0.5rem 0 1.5rem 0;'>{active_name_main}</h3>",
+    f"<h2 style='text-align:center; margin:0.8rem 0 1.5rem 0; "
+    f"font-size:26px; color:#111827;'>{active_name_main}</h2>",
     unsafe_allow_html=True,
 )
 
 # 지침 set 삭제 모드 (메인 영역에 표시)
 if st.session_state.get("instset_delete_mode", False):
     sets = st.session_state.instruction_sets
-    st.markdown("---")
     st.markdown("#### 🗑 지침 set 삭제")
 
     if not sets:
@@ -726,7 +730,7 @@ if st.session_state.get("show_instruction_set_editor", False):
     edit_id = st.session_state.get("edit_instruction_set_id")
     edit_mode = bool(edit_id)
 
-    target_set = None
+    target_set = None    # type: ignore
     if edit_mode:
         for s in st.session_state.instruction_sets:
             if s.get("id") == edit_id:
@@ -821,16 +825,8 @@ if st.session_state.get("show_instruction_set_editor", False):
                 st.rerun()
 
 # ============================
-# 지침 set 전체 Disclosure Group (expander)
+# 지침 set 미리보기 블록은 완전히 제거됨
 # ============================
-if inst_sets_main:
-    st.markdown("---")
-    st.markdown("#### 📚 지침 set 미리보기")
-    for s in inst_sets_main:
-        name = s.get("name", "이름 없는 set")
-        expanded = (s.get("id") == active_id_main)
-        with st.expander(name, expanded=expanded):
-            st.text(build_instruction_preview(s))
 
 # ============================
 # 최근 히스토리 및 입력
@@ -907,5 +903,4 @@ if st.session_state.last_output:
         key="output_editor",
         label_visibility="collapsed",
     )
-    # 사용자가 수정하면 그 값 유지
     st.session_state.last_output = output_text
