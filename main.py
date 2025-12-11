@@ -325,101 +325,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ============================
+# 왼쪽 사이드바
+# ============================
 with st.sidebar:
     st.markdown("<div class='sidebar-top'>", unsafe_allow_html=True)
 
-    st.markdown("### 🎛 지침 set")
-
-    inst_sets = st.session_state.instruction_sets
-    active_id = st.session_state.active_instruction_set_id
-
-    if inst_sets:
-        names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(inst_sets)]
-
-        active_index = 0
-        for i, s in enumerate(inst_sets):
-            if s.get("id") == active_id:
-                active_index = i
-                break
-
-        selected_index = st.radio(
-            "지침 set 선택",
-            options=list(range(len(inst_sets))),
-            format_func=lambda i: names[i],
-            index=active_index,
-            label_visibility="collapsed",
-        )
-
-        selected_set = inst_sets[selected_index]
-        if selected_set.get("id") != active_id:
-            st.session_state.active_instruction_set_id = selected_set.get("id")
-            apply_instruction_set(selected_set)
-            st.rerun()
-
-    # ==== 도구 라디오 버튼: -, +, 편집, del ====
-    toolbar_key = f"instset_toolbar_{st.session_state['instset_toolbar_run_id']}"
-    action = st.radio(
-        "",
-        ["-", "add", "edit", "del"],
-        key=toolbar_key,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-
-    if action == "add":
-        st.session_state.show_instruction_set_editor = True
-        st.session_state.edit_instruction_set_id = None
-        st.session_state.instset_toolbar_run_id += 1
-        st.rerun()
-    elif action == "edit":
-        st.session_state.show_instruction_set_editor = True
-        st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
-        st.session_state.instset_toolbar_run_id += 1
-        st.rerun()
-    elif action == "del":
-        st.session_state.instset_delete_mode = True
-        st.session_state.instset_toolbar_run_id += 1
-        st.rerun()
-
-    # 도구 아래 구분선
-    st.markdown("---")
-
-    if st.session_state.instset_delete_mode:
-        sets = st.session_state.instruction_sets
-        if not sets:
-            st.info("삭제할 지침 set이 없습니다.")
-        else:
-            names = [s.get("name", f"셋 {i+1}") for i, s in enumerate(sets)]
-            del_index = st.selectbox(
-                "삭제할 지침 set 선택",
-                options=list(range(len(sets))),
-                format_func=lambda i: names[i],
-                label_visibility="collapsed",
-                key="delete_instruction_set_select",
-            )
-            col_del1, col_del2 = st.columns(2)
-            with col_del1:
-                if st.button("선택한 지침 set 삭제", use_container_width=True):
-                    delete_id = sets[del_index].get("id")
-                    st.session_state.instruction_sets = [
-                        s for s in sets if s.get("id") != delete_id
-                    ]
-                    if delete_id == st.session_state.active_instruction_set_id:
-                        if st.session_state.instruction_sets:
-                            st.session_state.active_instruction_set_id = (
-                                st.session_state.instruction_sets[0].get("id")
-                            )
-                            ensure_active_set_applied()
-                        else:
-                            st.session_state.active_instruction_set_id = None
-                    save_config()
-                    st.session_state.instset_delete_mode = False
-                    st.rerun()
-            with col_del2:
-                if st.button("취소", use_container_width=True):
-                    st.session_state.instset_delete_mode = False
-                    st.rerun()
-
+    # 🔽 여기부터는 기존 '📘 지침'만 유지
     st.markdown("### 📘 지침")
 
     with st.expander("1. 역할 지침 (Role Instructions)", expanded=False):
@@ -663,6 +575,9 @@ with st.sidebar:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# ============================
+# 메인 영역
+# ============================
 inst_sets_main = st.session_state.instruction_sets
 active_id_main = st.session_state.active_instruction_set_id
 active_set_main = None
@@ -686,16 +601,127 @@ if active_set_main is None:
         "inst_user_intent": st.session_state.inst_user_intent,
     }
 
+# 상단 타이틀
 st.markdown(
     "<h2 style='margin-bottom:0.15rem; text-align:right; "
     "color:#374151; font-size:22px;'>scriptking</h2>",
     unsafe_allow_html=True,
 )
 st.markdown("---")
+
+# ============================
+# 우측 상단 지침 set 선택 & 관리 버튼
+# ============================
+if inst_sets_main:
+    names_main = [s.get("name", f"셋 {i+1}") for i, s in enumerate(inst_sets_main)]
+    active_index_main = 0
+    for i, s in enumerate(inst_sets_main):
+        if s.get("id") == active_id_main:
+            active_index_main = i
+            break
+
+    col_sets, col_actions = st.columns([3, 2])
+
+    with col_sets:
+        st.markdown(
+            "<div style='font-size:0.85rem; color:#6b7280; "
+            "margin-bottom:0.2rem; text-align:left;'>지침 set 선택</div>",
+            unsafe_allow_html=True,
+        )
+        selected_index_main = st.radio(
+            "지침 set 선택",
+            options=list(range(len(inst_sets_main))),
+            format_func=lambda i: names_main[i],
+            index=active_index_main,
+            key="instset_main_radio",
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+        selected_set = inst_sets_main[selected_index_main]
+        if selected_set.get("id") != active_id_main:
+            st.session_state.active_instruction_set_id = selected_set.get("id")
+            apply_instruction_set(selected_set)
+            save_config()
+            st.rerun()
+
+    with col_actions:
+        st.markdown(
+            "<div style='font-size:0.85rem; color:#6b7280; "
+            "margin-bottom:0.2rem; text-align:right;'>지침 set 관리</div>",
+            unsafe_allow_html=True,
+        )
+        toolbar_key = f"instset_toolbar_main_{st.session_state['instset_toolbar_run_id']}"
+        action_main = st.radio(
+            "",
+            ["-", "추가", "편집", "삭제"],
+            key=toolbar_key,
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
+        if action_main == "추가":
+            st.session_state.show_instruction_set_editor = True
+            st.session_state.edit_instruction_set_id = None
+            st.session_state.instset_toolbar_run_id += 1
+            st.rerun()
+        elif action_main == "편집":
+            st.session_state.show_instruction_set_editor = True
+            st.session_state.edit_instruction_set_id = st.session_state.active_instruction_set_id
+            st.session_state.instset_toolbar_run_id += 1
+            st.rerun()
+        elif action_main == "삭제":
+            st.session_state.instset_delete_mode = True
+            st.session_state.instset_toolbar_run_id += 1
+            st.rerun()
+
+# 가운데 지침 set 이름
 st.markdown(
     f"<h3 style='text-align:center; margin:0.5rem 0 1.5rem 0;'>{active_name_main}</h3>",
     unsafe_allow_html=True,
 )
+
+# 지침 set 삭제 모드 (메인 영역에 표시)
+if st.session_state.get("instset_delete_mode", False):
+    sets = st.session_state.instruction_sets
+    st.markdown("---")
+    st.markdown("#### 🗑 지침 set 삭제")
+
+    if not sets:
+        st.info("삭제할 지침 set이 없습니다.")
+        st.session_state.instset_delete_mode = False
+    else:
+        names_del = [s.get("name", f"셋 {i+1}") for i, s in enumerate(sets)]
+        del_index = st.selectbox(
+            "삭제할 지침 set 선택",
+            options=list(range(len(sets))),
+            format_func=lambda i: names_del[i],
+            label_visibility="collapsed",
+            key="delete_instruction_set_select_main",
+        )
+        col_del1, col_del2 = st.columns(2)
+        with col_del1:
+            if st.button("선택한 지침 set 삭제", use_container_width=True):
+                delete_id = sets[del_index].get("id")
+                st.session_state.instruction_sets = [
+                    s for s in sets if s.get("id") != delete_id
+                ]
+                if delete_id == st.session_state.active_instruction_set_id:
+                    if st.session_state.instruction_sets:
+                        st.session_state.active_instruction_set_id = (
+                            st.session_state.instruction_sets[0].get("id")
+                        )
+                        ensure_active_set_applied()
+                    else:
+                        st.session_state.active_instruction_set_id = None
+                save_config()
+                st.session_state.instset_delete_mode = False
+                st.rerun()
+        with col_del2:
+            if st.button("취소", use_container_width=True):
+                st.session_state.instset_delete_mode = False
+                st.rerun()
+
+# 지침 set 추가/편집 에디터
 if st.session_state.get("show_instruction_set_editor", False):
     edit_id = st.session_state.get("edit_instruction_set_id")
     edit_mode = bool(edit_id)
@@ -794,6 +820,21 @@ if st.session_state.get("show_instruction_set_editor", False):
                 st.success("✅ 지침 set이 저장되었습니다.")
                 st.rerun()
 
+# ============================
+# 지침 set 전체 Disclosure Group (expander)
+# ============================
+if inst_sets_main:
+    st.markdown("---")
+    st.markdown("#### 📚 지침 set 미리보기")
+    for s in inst_sets_main:
+        name = s.get("name", "이름 없는 set")
+        expanded = (s.get("id") == active_id_main)
+        with st.expander(name, expanded=expanded):
+            st.text(build_instruction_preview(s))
+
+# ============================
+# 최근 히스토리 및 입력
+# ============================
 if st.session_state.history:
     items = st.session_state.history[-5:]
     html_items = ""
@@ -851,6 +892,20 @@ with center_col:
 
 st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
 
+# ============================
+# 생성 결과: 가운데 정렬 제목 + 넓은 스크롤 texteditor
+# ============================
 if st.session_state.last_output:
-    st.subheader("📄 생성된 내레이션")
-    st.write(st.session_state.last_output)
+    st.markdown(
+        "<h3 style='text-align:center; margin-bottom:0.75rem;'>📄 생성된 내레이션</h3>",
+        unsafe_allow_html=True,
+    )
+    output_text = st.text_area(
+        "",
+        value=st.session_state.last_output,
+        height=400,
+        key="output_editor",
+        label_visibility="collapsed",
+    )
+    # 사용자가 수정하면 그 값 유지
+    st.session_state.last_output = output_text
